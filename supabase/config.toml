@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.task-refine]
 verify_jwt = false
+
+[functions.goal-decompose]
+verify_jwt = false
