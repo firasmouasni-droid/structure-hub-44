@@ -44,7 +44,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         )}
       </AnimatePresence>
 
-      <main className="flex-1 overflow-y-auto bg-background">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background">
         {/* Mobile top bar */}
         <div className="sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-card/80 backdrop-blur-sm border-b border-border/50 lg:hidden transition-colors duration-300">
           <button

@@ -87,19 +87,19 @@ const GlobalAnalytics = () => {
     <PageTransition>
       <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <motion.div className="w-12 h-12 rounded-3xl bg-primary/15 flex items-center justify-center shadow-soft" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <motion.div className="w-12 h-12 rounded-3xl bg-primary/15 flex items-center justify-center shadow-soft shrink-0" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}>
               <BarChart3 className="w-6 h-6 text-primary" />
             </motion.div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Analytics & Feedback</h1>
-              <p className="text-sm text-muted-foreground">Basé sur Planning Fallacy, Attention Residue & Kanban Science</p>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Analytics & Feedback</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">Planning Fallacy, Attention Residue & Kanban Science</p>
             </div>
           </div>
           <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
             onClick={handleRefresh} disabled={isFetching}
-            className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-primary/15 text-primary text-sm font-bold hover:bg-primary/25 transition-all disabled:opacity-50">
+            className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-primary/15 text-primary text-sm font-bold hover:bg-primary/25 transition-all disabled:opacity-50 shrink-0">
             <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
             {isFetching ? "Analyse..." : "Actualiser"}
           </motion.button>

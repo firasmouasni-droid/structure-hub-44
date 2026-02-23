@@ -140,22 +140,24 @@ const GlobalRoutines = () => {
     <PageTransition>
       <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <motion.div className="w-12 h-12 rounded-3xl bg-warning/15 flex items-center justify-center shadow-soft" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}>
-            <Clock className="w-6 h-6 text-warning" />
-          </motion.div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Routines</h1>
-            <p className="text-sm text-muted-foreground">
-              Choisissez votre mode d'organisation basé sur la science
-              {activeRoutine?.name && <span className="ml-1 text-primary font-medium">· Active : {activeRoutine.name}</span>}
-            </p>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <motion.div className="w-12 h-12 rounded-3xl bg-warning/15 flex items-center justify-center shadow-soft shrink-0" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}>
+              <Clock className="w-6 h-6 text-warning" />
+            </motion.div>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Routines</h1>
+              <p className="text-sm text-muted-foreground truncate">
+                Choisissez votre mode d'organisation
+                {activeRoutine?.name && <span className="ml-1 text-primary font-medium">· {activeRoutine.name}</span>}
+              </p>
+            </div>
           </div>
           <motion.button
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             onClick={() => setOnboardingOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-2xl gradient-primary text-primary-foreground text-sm font-bold shadow-soft"
+            className="flex items-center gap-2 px-4 py-2 rounded-2xl gradient-primary text-primary-foreground text-sm font-bold shadow-soft shrink-0"
           >
             <Wand2 className="w-4 h-4" />
             Quiz personnalité
