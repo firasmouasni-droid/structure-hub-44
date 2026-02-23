@@ -112,7 +112,7 @@ const Home = () => {
 
           {/* ── QG Général + raccourcis globaux ── */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="space-y-4">
-            <Link to="/global/dashboard">
+            <Link to="/life-hq">
               <HoverCard className="card-soft p-6 group cursor-pointer border-2 border-primary/20 hover:border-primary/40 transition-all">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">

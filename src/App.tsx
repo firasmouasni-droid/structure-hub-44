@@ -27,6 +27,7 @@ import StructureCoach from "./pages/structure/StructureCoach";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 import SpaceRouter from "./pages/SpaceRouter";
+import LifeHQ from "./pages/global/LifeHQ";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,9 @@ const App = () => (
         <Routes>
           {/* Home — no layout */}
           <Route path="/" element={<Home />} />
+
+          {/* QG Général — Life cockpit (no sidebar layout) */}
+          <Route path="/life-hq" element={<AppLayout><LifeHQ /></AppLayout>} />
 
           {/* Life Spaces — Coming Soon for inactive */}
           <Route path="/spaces/:spaceKey" element={<SpaceRouter />} />
