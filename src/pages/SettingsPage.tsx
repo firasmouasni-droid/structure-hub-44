@@ -1,4 +1,5 @@
-import { User, Bell, Palette } from "lucide-react";
+import { User, Bell, Palette, Clock } from "lucide-react";
+import { Link } from "react-router-dom";
 import { PageTransition, StaggerContainer, StaggerItem } from "@/components/motion/MotionWrappers";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useTheme } from "@/hooks/useTheme";
@@ -48,6 +49,20 @@ const SettingsPage = () => {
                     <p className="text-xs text-muted-foreground mt-0.5">Pastel Soft UI ✨</p>
                   </div>
                   <ThemeToggle />
+                </div>
+              </SettingSection>
+            </StaggerItem>
+
+            <StaggerItem>
+              <SettingSection icon={<Clock className="w-5 h-5 text-warning" />} title="Routines & Organisation" description="Gérer votre routine de travail et mode d'organisation">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-foreground font-medium">Catalogue de routines</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">7 routines basées sur la science de la productivité</p>
+                  </div>
+                  <Link to="/global/routines" className="px-4 py-2 rounded-xl bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition-colors">
+                    Configurer →
+                  </Link>
                 </div>
               </SettingSection>
             </StaggerItem>

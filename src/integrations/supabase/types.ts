@@ -238,30 +238,48 @@ export type Database = {
         Row: {
           afternoon_tasks: Json | null
           availability_rules: Json | null
+          blocks: Json | null
           created_at: string
+          description: string | null
           email_slots: Json | null
           id: string
+          is_active: boolean
           morning_focus: Json | null
+          name: string | null
+          organization_mode: string | null
+          routine_type: string
           structure_id: string | null
           user_id: string | null
         }
         Insert: {
           afternoon_tasks?: Json | null
           availability_rules?: Json | null
+          blocks?: Json | null
           created_at?: string
+          description?: string | null
           email_slots?: Json | null
           id?: string
+          is_active?: boolean
           morning_focus?: Json | null
+          name?: string | null
+          organization_mode?: string | null
+          routine_type?: string
           structure_id?: string | null
           user_id?: string | null
         }
         Update: {
           afternoon_tasks?: Json | null
           availability_rules?: Json | null
+          blocks?: Json | null
           created_at?: string
+          description?: string | null
           email_slots?: Json | null
           id?: string
+          is_active?: boolean
           morning_focus?: Json | null
+          name?: string | null
+          organization_mode?: string | null
+          routine_type?: string
           structure_id?: string | null
           user_id?: string | null
         }
