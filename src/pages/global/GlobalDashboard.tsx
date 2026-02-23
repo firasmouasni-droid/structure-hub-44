@@ -3,26 +3,42 @@ import { useStructures } from "@/hooks/useStructures";
 import { useGoals } from "@/hooks/useGoals";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { useUserStats, useIncrementXP } from "@/hooks/useUserStats";
+import { useRoutines } from "@/hooks/useRoutines";
 import { CheckCircle2, Clock, TrendingUp, Target, Flame, Zap, Bot, ArrowRight, Sparkles, CalendarDays, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard, FadeInSection } from "@/components/motion/MotionWrappers";
 import { motion } from "framer-motion";
 import { useUpdateTask } from "@/hooks/useTasks";
+import RoutineOnboarding from "@/components/onboarding/RoutineOnboarding";
 
 const GlobalDashboard = () => {
   const { data: tasks = [] } = useTasks();
   const { data: structures = [] } = useStructures();
   const { data: goals = [] } = useGoals();
   const { data: stats } = useUserStats();
+  const { data: routines = [] } = useRoutines();
   const updateTask = useUpdateTask();
   const incrementXP = useIncrementXP();
   const today = new Date().toISOString().split("T")[0];
   const { data: todayEvents = [] } = useCalendarEvents(today);
 
   const wip = useWIPStatus();
+
+  // Auto-trigger onboarding if no routine configured
+  const hasRoutine = routines.some(r => !r.structure_id);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
+
+  useEffect(() => {
+    if (!hasRoutine && routines !== undefined && !onboardingDismissed) {
+      const timer = setTimeout(() => setOnboardingOpen(true), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [hasRoutine, onboardingDismissed, routines]);
 
   const doneTasks = tasks.filter(t => t.status === "done").length;
   const todayTasks = tasks.filter(t => t.due_date === today);
@@ -274,6 +290,10 @@ const GlobalDashboard = () => {
             </StaggerContainer>
           </div>
         </div>
+        <RoutineOnboarding
+          open={onboardingOpen}
+          onOpenChange={(open) => { setOnboardingOpen(open); if (!open) setOnboardingDismissed(true); }}
+        />
     </PageTransition>
   );
 };
