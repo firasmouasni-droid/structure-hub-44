@@ -1,5 +1,6 @@
 import { useCalendarEventsByStructure } from "@/hooks/useCalendarEvents";
 import { useTasksByStructure, useUpdateTask } from "@/hooks/useTasks";
+import { useRoutines } from "@/hooks/useRoutines";
 import { CalendarDays, Sparkles, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -18,15 +19,58 @@ const TABS = [
   { key: "month", label: "Mois" },
 ];
 
+function getRoutineZones(routine: any) {
+  if (!routine) return [];
+  const zones: { start: number; end: number; label: string; type: string; icon: string }[] = [];
+  const mf = routine.morning_focus as any;
+  const af = routine.afternoon_tasks as any;
+  const es = routine.email_slots as any;
+  if (mf?.start && mf?.end) {
+    zones.push({
+      start: parseInt(mf.start.split(":")[0]),
+      end: parseInt(mf.end.split(":")[0]),
+      label: mf.focus === "deep_work" ? "Deep Work" : mf.focus === "creative" ? "Créatif" : "Focus",
+      type: "deep_work",
+      icon: "🧠",
+    });
+  }
+  if (af?.start && af?.end) {
+    zones.push({
+      start: parseInt(af.start.split(":")[0]),
+      end: parseInt(af.end.split(":")[0]),
+      label: af.focus === "meetings_admin" ? "Meetings & Admin" : "Admin",
+      type: "admin",
+      icon: "☕",
+    });
+  }
+  if (Array.isArray(es)) {
+    for (const slot of es) {
+      const h = parseInt(slot.split(":")[0]);
+      zones.push({ start: h, end: h + 1, label: "Emails", type: "email", icon: "📧" });
+    }
+  }
+  return zones;
+}
+
+const ZONE_STYLES: Record<string, string> = {
+  deep_work: "bg-purple-500/5 border-l-2 border-l-purple-500/20",
+  admin: "bg-blue-500/5 border-l-2 border-l-blue-500/20",
+  email: "bg-cyan-500/5 border-l-2 border-l-cyan-500/20",
+};
+
 const StructurePlanning = () => {
   const { id } = useParams<{ id: string }>();
   const today = new Date().toISOString().split("T")[0];
   const { data: events = [] } = useCalendarEventsByStructure(id || "", today);
   const { data: allTasks = [] } = useTasksByStructure(id || "");
+  const { data: routines = [] } = useRoutines();
   const updateTask = useUpdateTask();
   const [activeTab, setActiveTab] = useState("today");
   const [autoplanning, setAutoplanning] = useState(false);
   const qc = useQueryClient();
+
+  const routine = routines.find(r => r.structure_id === id) || routines.find(r => !r.structure_id) || null;
+  const routineZones = getRoutineZones(routine);
 
   const unplannedTasks = allTasks.filter(t => !t.due_date && t.status !== "done" && !t.is_inbox);
 
@@ -38,17 +82,13 @@ const StructurePlanning = () => {
   const handleAutoplan = async () => {
     setAutoplanning(true);
     try {
-      const { data, error } = await supabase.functions.invoke("autoplan", {
-        body: { structure_id: id },
-      });
+      const { data, error } = await supabase.functions.invoke("autoplan", { body: { structure_id: id } });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success(`${data.planned} tâches planifiées par l'IA ! 🤖`);
       qc.invalidateQueries({ queryKey: ["calendar_events"] });
       qc.invalidateQueries({ queryKey: ["tasks"] });
-    } catch (e: any) {
-      toast.error(e.message || "Erreur d'auto-planification");
-    }
+    } catch (e: any) { toast.error(e.message || "Erreur d'auto-planification"); }
     setAutoplanning(false);
   };
 
@@ -61,6 +101,8 @@ const StructurePlanning = () => {
 
   const totalPlanned = mappedEvents.reduce((sum, e) => sum + e.durationHours, 0);
   const dateStr = format(new Date(), "EEEE d MMMM", { locale: fr });
+
+  const getZoneForHour = (hour: number) => routineZones.find(z => hour >= z.start && hour < z.end);
 
   return (
     <PageTransition>
@@ -89,22 +131,46 @@ const StructurePlanning = () => {
             ))}
           </div>
 
+          {/* Routine zones legend */}
+          {routineZones.length > 0 && (
+            <div className="flex items-center gap-4 flex-wrap">
+              <span className="text-xs text-muted-foreground font-semibold">Zones de routine :</span>
+              {routineZones.filter((z, i, arr) => arr.findIndex(x => x.type === z.type) === i).map(z => (
+                <div key={z.type} className="flex items-center gap-1.5">
+                  <span className="text-xs">{z.icon}</span>
+                  <span className="text-[11px] text-muted-foreground">{z.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <FadeInSection className="lg:col-span-3">
               <div className="card-soft overflow-hidden">
-                {hours.map((hour, idx) => (
-                  <motion.div key={hour} className="flex border-b border-border/20 last:border-0" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.02, duration: 0.3 }}>
-                    <div className="w-16 py-5 text-right pr-4 text-xs text-muted-foreground shrink-0 font-semibold">{hour}:00</div>
-                    <div className="flex-1 relative min-h-[64px] border-l border-border/20">
-                      {mappedEvents.filter(e => e.startHour === hour).map((event, i) => (
-                        <motion.div key={i} className="absolute left-2 right-2 rounded-2xl px-4 py-2.5 border bg-primary/12 border-primary/20 text-primary" style={{ height: `${Math.max(event.durationHours * 64, 40)}px`, top: `${event.startMin}px` }} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 + i * 0.1 }}>
-                          <p className="text-xs font-bold truncate">{event.title}</p>
-                          <p className="text-[11px] opacity-70">{event.durationHours.toFixed(1)}h</p>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </motion.div>
-                ))}
+                {hours.map((hour, idx) => {
+                  const zone = getZoneForHour(hour);
+                  const zoneStyle = zone ? ZONE_STYLES[zone.type] || "" : "";
+                  const isZoneStart = zone && hour === zone.start;
+
+                  return (
+                    <motion.div key={hour} className={`flex border-b border-border/20 last:border-0 ${zoneStyle}`} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.02, duration: 0.3 }}>
+                      <div className="w-16 py-5 text-right pr-4 text-xs text-muted-foreground shrink-0 font-semibold">
+                        {hour}:00
+                        {isZoneStart && (
+                          <div className="text-[9px] mt-0.5 opacity-60">{zone.icon} {zone.label}</div>
+                        )}
+                      </div>
+                      <div className="flex-1 relative min-h-[64px] border-l border-border/20">
+                        {mappedEvents.filter(e => e.startHour === hour).map((event, i) => (
+                          <motion.div key={i} className="absolute left-2 right-2 rounded-2xl px-4 py-2.5 border bg-primary/12 border-primary/20 text-primary z-10" style={{ height: `${Math.max(event.durationHours * 64, 40)}px`, top: `${event.startMin}px` }} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 + i * 0.1 }}>
+                            <p className="text-xs font-bold truncate">{event.title}</p>
+                            <p className="text-[11px] opacity-70">{event.durationHours.toFixed(1)}h · {event.source === "ai" ? "IA" : event.source}</p>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             </FadeInSection>
 

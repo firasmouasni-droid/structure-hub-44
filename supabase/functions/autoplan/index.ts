@@ -18,43 +18,41 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const today = new Date().toISOString().split("T")[0];
 
-    // 1. Get estimation coefficients (planning fallacy correction)
-    const { data: coefficients } = await supabase
-      .from("estimation_coefficients")
-      .select("*");
+    const body = await req.json().catch(() => ({}));
+    const structureFilter = body.structure_id || null;
 
+    // 1. Get estimation coefficients (planning fallacy correction)
+    const { data: coefficients } = await supabase.from("estimation_coefficients").select("*");
     const coeffMap: Record<string, number> = {};
     for (const c of coefficients || []) {
       coeffMap[c.action_type] = c.coefficient;
     }
 
     // 2. Get unplanned tasks sorted by computed_priority DESC
-    const { data: tasks } = await supabase
-      .from("tasks")
-      .select("*")
-      .is("due_date", null)
-      .neq("status", "done")
-      .order("computed_priority", { ascending: false })
-      .limit(20);
+    let taskQuery = supabase.from("tasks").select("*").is("due_date", null).neq("status", "done").order("computed_priority", { ascending: false }).limit(20);
+    if (structureFilter) taskQuery = taskQuery.eq("structure_id", structureFilter);
+    const { data: tasks } = await taskQuery;
 
-    // 3. Get today's existing events
-    const { data: events } = await supabase
-      .from("calendar_events")
-      .select("*")
-      .gte("start_time", `${today}T00:00:00`)
-      .lte("start_time", `${today}T23:59:59`);
+    // 3. Get today's existing REAL events (not routine placeholders)
+    let eventQuery = supabase.from("calendar_events").select("*").gte("start_time", `${today}T00:00:00`).lte("start_time", `${today}T23:59:59`);
+    const { data: events } = await eventQuery;
 
-    // 4. Get routines
-    const { data: routines } = await supabase
-      .from("routines")
-      .select("*")
-      .limit(1);
+    // 4. Get routines — these are RULES for placement, NOT events
+    const { data: routines } = await supabase.from("routines").select("*").limit(5);
+    
+    // Find applicable routine: structure-specific or global
+    const routine = (structureFilter 
+      ? routines?.find((r: any) => r.structure_id === structureFilter) 
+      : null) || routines?.find((r: any) => !r.structure_id) || routines?.[0] || null;
 
-    const routine = routines?.[0] || null;
+    // Parse routine into placement rules
+    const morningFocus = routine?.morning_focus as any || { start: "08:00", end: "12:00", focus: "deep_work" };
+    const afternoonTasks = routine?.afternoon_tasks as any || { start: "14:00", end: "17:00", focus: "meetings_admin" };
+    const emailSlots = (routine?.email_slots as any) || ["09:00", "13:00", "17:30"];
 
-    // 5. Apply planning fallacy correction to estimated durations
+    // 5. Apply planning fallacy correction
     const correctedTasks = tasks?.map(t => {
-      const coeff = coeffMap[t.action_type] || 1.3; // default 1.3x (30% buffer)
+      const coeff = coeffMap[t.action_type] || 1.3;
       const rawDuration = t.estimated_duration || 30;
       const correctedDuration = Math.ceil(rawDuration * coeff);
       return {
@@ -71,9 +69,9 @@ serve(async (req) => {
       };
     }) || [];
 
-    // 6. Calculate available capacity (60-70% rule)
-    const workdayMinutes = 8 * 60; // 8h workday
-    const maxCapacity = Math.floor(workdayMinutes * 0.65); // 65% = sweet spot
+    // 6. Calculate available capacity (65% rule)
+    const workdayMinutes = 8 * 60;
+    const maxCapacity = Math.floor(workdayMinutes * 0.65);
     const existingMinutes = (events || []).reduce((sum, e) => {
       return sum + (new Date(e.end_time).getTime() - new Date(e.start_time).getTime()) / 60000;
     }, 0);
@@ -90,38 +88,45 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `Tu es un planificateur IA basé sur les études scientifiques de productivité.
+            content: `Tu es un planificateur IA scientifique. Tu places des TÂCHES dans le calendrier en respectant les routines de l'utilisateur.
 
-RÈGLES STRICTES:
-1. CAPACITÉ MAX: ${availableMinutes} minutes disponibles aujourd'hui (65% de la journée, buffer pour imprévus — Planning Fallacy).
-2. NE PAS dépasser cette capacité. Arrête de planifier quand la limite est atteinte.
-3. GROUPAGE OBLIGATOIRE: Regroupe les tâches du même type consécutivement pour réduire le changement de contexte (Attention Residue).
-4. DEEP WORK MATINAL (8h-12h): Place les tâches importantes NON urgentes (importance ≥ 4, urgency ≤ 3) dans cette zone. Blocs de 60-120 min max.
-5. APRÈS-MIDI (14h-17h): Tâches urgentes, admin, meetings, emails.
-6. Les durées sont DÉJÀ corrigées par le coefficient de planning fallacy.
-7. Laisse 15 min de pause entre les blocs.
-8. Tâches importantes & non urgentes → deep work matinal.
-9. Tâches urgentes & importantes → traitement rapide hors deep work.
+IMPORTANT — LES ROUTINES SONT DES RÈGLES DE PLACEMENT, PAS DES ÉVÉNEMENTS :
+- Les routines définissent QUAND placer QUEL TYPE de tâche
+- Tu ne dois JAMAIS créer d'événements "Deep Work", "Emails", "Réunions" — ce sont des zones, pas des actions
+- Tu places les VRAIES TÂCHES DANS ces zones
 
-Réponds via l'outil plan_tasks. Ne planifie que ce qui rentre dans la capacité.`
+RÈGLES DE PLACEMENT (basées sur les routines de l'utilisateur) :
+- Zone matin (${morningFocus.start}-${morningFocus.end}, type: ${morningFocus.focus}) → Place ici les tâches de fond importantes : WRITING, ANALYSIS, STRATEGY, DEVELOPMENT, tâches avec importance ≥ 4
+- Zone après-midi (${afternoonTasks.start}-${afternoonTasks.end}, type: ${afternoonTasks.focus}) → Place ici les tâches MEETING, CALL, ADMIN, et tâches urgentes légères
+- Créneaux email (${emailSlots.join(", ")}) → Place ici les tâches EMAIL, REPLY (30 min chacun)
+
+RÈGLES DE CAPACITÉ :
+1. CAPACITÉ MAX: ${availableMinutes} minutes disponibles
+2. NE PAS dépasser cette capacité
+3. Les durées sont DÉJÀ corrigées par le coefficient de Planning Fallacy
+4. 15 min de pause entre les blocs
+5. Respecte les événements existants (ne pas chevaucher)
+6. Si la zone matin est déjà occupée par des événements réels, utilise l'espace RESTANT dans cette zone
+
+GROUPAGE : Regroupe les tâches du même type consécutivement (Attention Residue).
+
+Réponds via l'outil plan_tasks.`
           },
           {
             role: "user",
             content: `Date: ${today}
 Capacité restante: ${availableMinutes} minutes
 
-Tâches (triées par priorité calculée): ${JSON.stringify(correctedTasks)}
+Tâches à placer (triées par priorité): ${JSON.stringify(correctedTasks)}
 
-Événements existants: ${JSON.stringify(events?.map(e => ({ title: e.title, start: e.start_time, end: e.end_time })))}
-
-Routine: ${JSON.stringify(routine)}`
+Événements RÉELS existants (à ne pas chevaucher): ${JSON.stringify(events?.map(e => ({ title: e.title, start: e.start_time, end: e.end_time })))}`
           }
         ],
         tools: [{
           type: "function",
           function: {
             name: "plan_tasks",
-            description: "Assign time slots to tasks respecting scientific rules",
+            description: "Place tasks in specific time slots respecting routine zones and existing events",
             parameters: {
               type: "object",
               properties: {
@@ -133,15 +138,15 @@ Routine: ${JSON.stringify(routine)}`
                       task_id: { type: "string" },
                       start_time: { type: "string", description: "ISO datetime" },
                       end_time: { type: "string", description: "ISO datetime" },
-                      block_type: { type: "string", enum: ["deep_work", "admin", "meeting", "email", "other"], description: "Type of work block" },
+                      block_type: { type: "string", enum: ["deep_work", "admin", "meeting", "email", "other"] },
                     },
                     required: ["task_id", "start_time", "end_time", "block_type"],
                     additionalProperties: false
                   }
                 },
-                capacity_used: { type: "number", description: "Total minutes planned" },
-                capacity_remaining: { type: "number", description: "Minutes left available" },
-                skipped_count: { type: "number", description: "Tasks not planned due to capacity" },
+                capacity_used: { type: "number" },
+                capacity_remaining: { type: "number" },
+                skipped_count: { type: "number" },
               },
               required: ["planned", "capacity_used", "capacity_remaining", "skipped_count"],
               additionalProperties: false
@@ -171,7 +176,7 @@ Routine: ${JSON.stringify(routine)}`
     const result = JSON.parse(toolCall.function.arguments);
     const { planned, capacity_used, capacity_remaining, skipped_count } = result;
 
-    // Create calendar events and update tasks
+    // Create calendar events for TASKS ONLY (not routine blocks)
     for (const item of planned) {
       const task = tasks?.find(t => t.id === item.task_id);
       if (!task) continue;
