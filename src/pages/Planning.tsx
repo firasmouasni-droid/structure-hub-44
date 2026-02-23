@@ -38,33 +38,37 @@ const Planning = () => {
 
   return (
     <AppLayout>
-      <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-5 animate-fade-in">
+      <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-6 animate-fade-in">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <CalendarDays className="w-5 h-5 text-muted-foreground" />
-            <h1 className="text-h1 text-foreground">Planning</h1>
-            <span className="text-caption text-muted-foreground capitalize">{dateStr}</span>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-accent/15 flex items-center justify-center">
+              <CalendarDays className="w-5 h-5 text-accent" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Planning</h1>
+              <p className="text-sm text-muted-foreground capitalize">{dateStr}</p>
+            </div>
           </div>
-          <button className="flex items-center gap-2 px-3.5 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
-            <Sparkles className="w-3.5 h-3.5" />
+          <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl gradient-primary text-primary-foreground text-sm font-semibold shadow-soft hover:shadow-soft-lg transition-all">
+            <Sparkles className="w-4 h-4" />
             Planifier avec l'IA
           </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
-          <div className="lg:col-span-3 bg-card rounded-lg border border-border overflow-hidden">
+          <div className="lg:col-span-3 card-soft overflow-hidden">
             <div className="relative">
               {hours.map((hour) => (
-                <div key={hour} className="flex border-b border-border last:border-0">
-                  <div className="w-14 py-4 text-right pr-3 text-[11px] text-muted-foreground shrink-0">{hour}:00</div>
-                  <div className="flex-1 relative min-h-[56px] border-l border-border">
+                <div key={hour} className="flex border-b border-border/30 last:border-0">
+                  <div className="w-16 py-4 text-right pr-4 text-xs text-muted-foreground shrink-0 font-medium">{hour}:00</div>
+                  <div className="flex-1 relative min-h-[60px] border-l border-border/30">
                     {mappedEvents
                       .filter((e) => e.startHour === hour)
                       .map((event, i) => (
-                        <div key={i} className="absolute left-1 right-1 rounded-md border border-primary/20 bg-primary/5 px-3 py-1.5"
-                          style={{ height: `${event.durationHours * 56}px`, top: `${event.startMin}px` }}>
-                          <p className="text-[11px] font-medium text-foreground truncate">{event.title}</p>
-                          <p className="text-[10px] text-muted-foreground">{event.structureName} · {event.durationHours}h</p>
+                        <div key={i} className="absolute left-2 right-2 rounded-2xl px-3 py-2 bg-primary/10 border border-primary/20"
+                          style={{ height: `${event.durationHours * 60}px`, top: `${event.startMin}px` }}>
+                          <p className="text-xs font-semibold text-foreground truncate">{event.title}</p>
+                          <p className="text-[11px] text-muted-foreground">{event.structureName} · {event.durationHours}h</p>
                         </div>
                       ))}
                   </div>
@@ -74,30 +78,30 @@ const Planning = () => {
           </div>
 
           <div className="space-y-4">
-            <div className="bg-card rounded-lg border border-border p-4">
-              <h2 className="text-sm font-medium text-foreground mb-3">À planifier</h2>
-              <div className="space-y-1.5">
-                {unplannedTasks.length === 0 && <p className="text-[11px] text-muted-foreground">Toutes les tâches sont planifiées 🎉</p>}
+            <div className="card-soft p-5">
+              <h2 className="text-sm font-bold text-foreground mb-3">À planifier</h2>
+              <div className="space-y-2">
+                {unplannedTasks.length === 0 && <p className="text-xs text-muted-foreground">Tout est planifié 🎉</p>}
                 {unplannedTasks.map((task) => (
-                  <div key={task.id} className="p-2.5 rounded-md border border-dashed border-border hover:border-primary/20 hover:bg-accent transition-colors">
-                    <p className="text-sm text-foreground">{task.action_label}</p>
-                    <div className="flex items-center justify-between mt-1">
-                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                  <div key={task.id} className="p-3 rounded-2xl border border-dashed border-border hover:border-primary/30 hover:bg-primary/5 transition-all duration-200">
+                    <p className="text-sm font-medium text-foreground">{task.action_label}</p>
+                    <div className="flex items-center justify-between mt-1.5">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <span>{task.estimated_duration ? `${task.estimated_duration} min` : '-'}</span>
-                        <span className={`px-1 py-0.5 rounded ${task.priority === "high" ? "bg-destructive/10 text-destructive" : task.priority === "medium" ? "bg-warning/10 text-warning" : "bg-accent text-muted-foreground"}`}>{task.priority}</span>
+                        <span className={`px-2 py-0.5 pill ${task.priority === "high" ? "bg-destructive/20 text-destructive-foreground" : task.priority === "medium" ? "bg-warning/20 text-warning-foreground" : "bg-muted text-muted-foreground"}`}>{task.priority}</span>
                       </div>
-                      <button onClick={() => handlePlanToday(task.id)} className="text-[11px] text-primary font-medium hover:underline">Aujourd'hui</button>
+                      <button onClick={() => handlePlanToday(task.id)} className="text-xs text-primary font-semibold hover:underline">Aujourd'hui</button>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="bg-card rounded-lg border border-border p-4">
-              <h2 className="text-sm font-medium text-foreground mb-2">Résumé</h2>
-              <div className="space-y-1.5 text-[11px]">
-                <div className="flex justify-between"><span className="text-muted-foreground">Total planifié</span><span className="font-medium text-foreground">{totalPlanned.toFixed(1)}h</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Événements</span><span className="font-medium text-foreground">{mappedEvents.length}</span></div>
+            <div className="card-soft p-5">
+              <h2 className="text-sm font-bold text-foreground mb-3">Résumé</h2>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between"><span className="text-muted-foreground">Total planifié</span><span className="font-semibold text-foreground">{totalPlanned.toFixed(1)}h</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Événements</span><span className="font-semibold text-foreground">{mappedEvents.length}</span></div>
               </div>
             </div>
           </div>
