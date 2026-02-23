@@ -1,6 +1,6 @@
 import { useStructures, useCreateStructure } from "@/hooks/useStructures";
 import { useLifeSpaces } from "@/hooks/useLifeSpaces";
-import { Plus, Brain, ArrowRight, CheckSquare, Calendar, Bot, Lock, Sun, CalendarDays } from "lucide-react";
+import { Plus, Brain, ArrowRight, CheckSquare, Calendar, Bot, Lock, Sun, CalendarDays, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -29,8 +29,26 @@ const Home = () => {
   const { data: allTasks = [] } = useTasks({ isInbox: false });
   const { data: allEvents = [] } = useCalendarEvents();
 
-  // Next 3 upcoming events (from now)
   const now = new Date();
+  const todayStr = now.toISOString().split("T")[0];
+
+  // Top 3 urgent tasks (not done, sorted by priority then due date)
+  const PRIORITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+  const urgentTasks = allTasks
+    .filter(t => t.status !== "done")
+    .sort((a, b) => {
+      const pa = PRIORITY_ORDER[a.priority] ?? 2;
+      const pb = PRIORITY_ORDER[b.priority] ?? 2;
+      if (pa !== pb) return pa - pb;
+      // Then by due date (soonest first, null last)
+      if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date);
+      if (a.due_date) return -1;
+      if (b.due_date) return 1;
+      return (b.urgency + b.importance) - (a.urgency + a.importance);
+    })
+    .slice(0, 3);
+
+  // Next 3 upcoming events
   const upcomingEvents = allEvents
     .filter(e => new Date(e.start_time) >= now)
     .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
@@ -128,6 +146,43 @@ const Home = () => {
               ))}
             </div>
           </motion.div>
+
+          {/* ── Tâches urgentes du jour ── */}
+          {urgentTasks.length > 0 && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-foreground">Tâches urgentes</h2>
+                <Link to="/global/tasks" className="text-xs text-primary font-medium hover:underline flex items-center gap-1">Toutes les tâches <ArrowRight className="w-3 h-3" /></Link>
+              </div>
+              <div className="space-y-2">
+                {urgentTasks.map(t => {
+                  const struct = structures.find(s => s.id === t.structure_id);
+                  const priorityStyle: Record<string, string> = {
+                    critical: "bg-destructive/15 text-destructive",
+                    high: "bg-warning/15 text-warning-foreground",
+                    medium: "bg-primary/10 text-primary",
+                    low: "bg-muted text-muted-foreground",
+                  };
+                  return (
+                    <HoverCard key={t.id} className="card-soft p-4 flex items-center gap-4">
+                      <div className={`w-9 h-9 rounded-2xl ${priorityStyle[t.priority] ?? priorityStyle.medium} flex items-center justify-center shrink-0`}>
+                        <AlertTriangle className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">{t.action_label}</p>
+                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                          {struct && <span>{struct.name}</span>}
+                          {t.due_date && <span>· {t.due_date === todayStr ? "Aujourd'hui" : format(new Date(t.due_date), "d MMM", { locale: fr })}</span>}
+                          {t.estimated_duration && <span>· {t.estimated_duration} min</span>}
+                        </div>
+                      </div>
+                      <span className={`pill px-2 py-0.5 text-[10px] font-bold ${priorityStyle[t.priority] ?? priorityStyle.medium}`}>{t.priority}</span>
+                    </HoverCard>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
 
           {/* ── Prochains événements ── */}
           {upcomingEvents.length > 0 && (
