@@ -98,9 +98,32 @@ const Home = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="space-y-4">
-              {/* Row 1: Avatar + Greeting */}
-              <div className="flex items-center gap-4">
+            <div className="space-y-0">
+              {/* Top row: Actions aligned right */}
+              <div className="flex items-center justify-end gap-2 mb-4">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setAuditOpen(true)}
+                  className="pill px-3 py-2 bg-card/70 backdrop-blur-sm shadow-soft flex items-center gap-2 cursor-pointer hover:bg-primary/10 transition-all"
+                >
+                  <Sun className="w-4 h-4 text-warning" />
+                  <span className="text-xs font-bold text-foreground">Check-in</span>
+                </motion.button>
+                <ThemeToggle />
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => signOut()}
+                  className="pill p-2 bg-card/70 backdrop-blur-sm shadow-soft cursor-pointer hover:bg-destructive/10 transition-all"
+                  title="Se déconnecter"
+                >
+                  <LogOut className="w-4 h-4 text-muted-foreground" />
+                </motion.button>
+              </div>
+
+              {/* Main: Avatar + Text */}
+              <div className="flex items-start gap-4">
                 <div className="relative shrink-0">
                   <motion.button
                     onClick={() => setAvatarMenuOpen(prev => !prev)}
@@ -162,39 +185,14 @@ const Home = () => {
                   <p className="text-sm text-muted-foreground mt-1 capitalize">
                     {format(new Date(), "EEEE d MMMM yyyy", { locale: fr })}
                   </p>
-                </div>
-              </div>
-
-              {/* Row 2: Motivation + Actions */}
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs sm:text-sm text-muted-foreground italic">
-                  {(() => {
-                    const hour = new Date().getHours();
-                    if (hour < 12) return "☀️ Prêt à conquérir cette matinée ?";
-                    if (hour < 17) return "🚀 L'après-midi est à toi, fonce !";
-                    return "✨ Belle soirée pour faire le point";
-                  })()}
-                </p>
-                <div className="flex items-center gap-2 shrink-0">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setAuditOpen(true)}
-                    className="pill px-3 py-2 bg-card/70 backdrop-blur-sm shadow-soft flex items-center gap-2 cursor-pointer hover:bg-primary/10 transition-all"
-                  >
-                    <Sun className="w-4 h-4 text-warning" />
-                    <span className="text-xs font-bold text-foreground">Check-in</span>
-                  </motion.button>
-                  <ThemeToggle />
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => signOut()}
-                    className="pill p-2 bg-card/70 backdrop-blur-sm shadow-soft cursor-pointer hover:bg-destructive/10 transition-all"
-                    title="Se déconnecter"
-                  >
-                    <LogOut className="w-4 h-4 text-muted-foreground" />
-                  </motion.button>
+                  <p className="text-xs text-muted-foreground mt-2 italic">
+                    {(() => {
+                      const hour = new Date().getHours();
+                      if (hour < 12) return "☀️ Prêt à conquérir cette matinée ?";
+                      if (hour < 17) return "🚀 L'après-midi est à toi, fonce !";
+                      return "✨ Belle soirée pour faire le point";
+                    })()}
+                  </p>
                 </div>
               </div>
             </div>
