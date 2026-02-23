@@ -242,7 +242,8 @@ ${taskTypeMapping}
 ${auditContext}
 
 HORAIRES DE TRAVAIL STRICTS (NE JAMAIS placer en dehors) :
-${WORK_BLOCKS.map(b => `- ${b.start}–${b.end}`).join("\n")}
+- 09:00–12:00 (matin)
+- 13:00–18:00 (après-midi)
 - PAUSE DÉJEUNER : 12:00–13:00 (aucune tâche ne doit être dans cette plage)
 - Toute tâche DOIT commencer ET finir ENTIÈREMENT dans l'une de ces plages
 
@@ -327,6 +328,7 @@ Tâches à placer (triées par priorité): ${JSON.stringify(correctedTasks)}
       });
     }
 
+    const result = JSON.parse(toolCall.function.arguments);
     const { planned, capacity_used, capacity_remaining, skipped_count, placement_summary } = result;
     let actuallyPlanned = 0;
 
