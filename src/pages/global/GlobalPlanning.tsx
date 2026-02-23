@@ -3,6 +3,8 @@ import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { useRoutines } from "@/hooks/useRoutines";
 import { CalendarDays, Sparkles, Loader2, ChevronLeft, ChevronRight, Compass } from "lucide-react";
 import GuidedDayDialog from "@/components/guided/GuidedDayDialog";
+import PlanningBlock from "@/components/planning/PlanningBlock";
+import { CATEGORIES, type TaskCategory, getCategoryColor } from "@/lib/categories";
 import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay, eachDayOfInterval, isToday, getDay } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useState, useMemo, useCallback } from "react";
@@ -62,15 +64,16 @@ function getRoutineZones(routine: any) {
   return zones;
 }
 
-const ZONE_STYLES: Record<string, string> = {
-  deep_work: "bg-purple-500/5 border-l-2 border-l-purple-500/20",
-  admin: "bg-blue-500/5 border-l-2 border-l-blue-500/20",
-  email: "bg-cyan-500/5 border-l-2 border-l-cyan-500/20",
+const ZONE_STYLES: Record<string, { bg: string; border: string }> = {
+  deep_work: { bg: `${CATEGORIES.focus.colors.light}15`, border: CATEGORIES.focus.colors.normal },
+  admin: { bg: `${CATEGORIES.admin.colors.light}15`, border: CATEGORIES.admin.colors.normal },
+  email: { bg: `${CATEGORIES.communication.colors.light}15`, border: CATEGORIES.communication.colors.normal },
+  meetings: { bg: `${CATEGORIES.meetings.colors.light}15`, border: CATEGORIES.meetings.colors.normal },
 };
 
 const DAY_NAMES_SHORT = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
-// ── Day view (hourly grid) with drag-and-drop ──
+// ── Day view (hourly grid) with drag-and-drop + category colors ──
 function DayView({ events, routineZones, onEventMove }: { events: CalendarEvent[]; routineZones: ReturnType<typeof getRoutineZones>; onEventMove?: (eventId: string, newHour: number) => void }) {
   const [dragOverHour, setDragOverHour] = useState<number | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -90,12 +93,6 @@ function DayView({ events, routineZones, onEventMove }: { events: CalendarEvent[
     setDraggingId(eventId);
   };
 
-  const handleDragOver = (e: React.DragEvent, hour: number) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    setDragOverHour(hour);
-  };
-
   const handleDrop = (e: React.DragEvent, hour: number) => {
     e.preventDefault();
     const eventId = e.dataTransfer.getData("text/plain");
@@ -104,53 +101,61 @@ function DayView({ events, routineZones, onEventMove }: { events: CalendarEvent[
     setDraggingId(null);
   };
 
-  const handleDragEnd = () => {
-    setDragOverHour(null);
-    setDraggingId(null);
-  };
-
   return (
     <div className="card-soft overflow-hidden">
       {hours.map((hour, idx) => {
         const zone = getZoneForHour(hour);
-        const zoneStyle = zone ? ZONE_STYLES[zone.type] || "" : "";
+        const zoneStyle = zone ? ZONE_STYLES[zone.type] : null;
         const isZoneStart = zone && hour === zone.start;
         const isDropTarget = dragOverHour === hour;
         return (
           <motion.div
             key={hour}
-            className={`flex border-b border-border/20 last:border-0 ${zoneStyle} ${isDropTarget ? "bg-primary/10 ring-1 ring-primary/30" : ""} transition-colors`}
+            className={`flex border-b border-border/10 last:border-0 transition-colors`}
+            style={{
+              backgroundColor: isDropTarget
+                ? "rgba(138,99,246,0.08)"
+                : zoneStyle
+                ? zoneStyle.bg
+                : undefined,
+              borderLeftWidth: zoneStyle ? "3px" : undefined,
+              borderLeftColor: zoneStyle ? `${zoneStyle.border}40` : undefined,
+            }}
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: idx * 0.02, duration: 0.3 }}
-            onDragOver={(e) => handleDragOver(e, hour)}
+            transition={{ delay: idx * 0.015, duration: 0.25 }}
+            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDragOverHour(hour); }}
             onDragLeave={() => setDragOverHour(null)}
             onDrop={(e) => handleDrop(e, hour)}
           >
             <div className="w-16 py-5 text-right pr-4 text-xs text-muted-foreground shrink-0 font-semibold">
               {hour}:00
-              {isZoneStart && <div className="text-[9px] mt-0.5 opacity-60">{zone.icon} {zone.label}</div>}
+              {isZoneStart && (
+                <div className="text-[9px] mt-0.5 font-medium" style={{ color: zoneStyle?.border || undefined, opacity: 0.7 }}>
+                  {zone.icon} {zone.label}
+                </div>
+              )}
             </div>
-            <div className="flex-1 relative min-h-[64px] border-l border-border/20">
+            <div className="flex-1 relative min-h-[68px] border-l border-border/15 py-0.5">
               {mappedEvents.filter(e => e.startHour === hour).map((event, i) => (
-                <motion.div
-                  key={i}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e as any, event.id)}
-                  onDragEnd={handleDragEnd}
-                  className={`absolute left-2 right-2 rounded-2xl px-4 py-2.5 border bg-primary/12 border-primary/20 text-primary z-10 cursor-grab active:cursor-grabbing select-none ${draggingId === event.id ? "opacity-40 scale-95" : ""} transition-all`}
-                  style={{ height: `${Math.max(event.durationHours * 64, 40)}px`, top: `${event.startMin}px` }}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: draggingId === event.id ? 0.4 : 1, scale: draggingId === event.id ? 0.95 : 1 }}
-                  transition={{ delay: 0.3 + i * 0.1 }}
-                >
-                  <p className="text-xs font-bold truncate">{event.title}</p>
-                  <p className="text-[11px] opacity-70">{event.durationHours.toFixed(1)}h · {event.source === "ai" ? "IA" : event.source}</p>
-                </motion.div>
+                <PlanningBlock
+                  key={event.id}
+                  eventId={event.id}
+                  title={event.title}
+                  category={(event as any).category || "admin"}
+                  durationHours={event.durationHours}
+                  source={event.source}
+                  height={Math.max(event.durationHours * 68, 44)}
+                  top={event.startMin}
+                  index={i}
+                  isDragging={draggingId === event.id}
+                  onDragStart={(e) => handleDragStart(e, event.id)}
+                  onDragEnd={() => { setDragOverHour(null); setDraggingId(null); }}
+                />
               ))}
               {isDropTarget && mappedEvents.filter(e => e.startHour === hour).length === 0 && (
-                <div className="absolute inset-2 rounded-2xl border-2 border-dashed border-primary/30 flex items-center justify-center">
-                  <p className="text-[10px] text-primary/50 font-medium">Déposer ici</p>
+                <div className="absolute inset-2 rounded-2xl border-2 border-dashed border-primary/25 flex items-center justify-center">
+                  <p className="text-[10px] text-primary/40 font-medium">Déposer ici</p>
                 </div>
               )}
             </div>
@@ -192,9 +197,10 @@ function WeekView({ events, weekStart, onDayClick }: { events: CalendarEvent[]; 
                 {dayEvents.map((event, i) => {
                   const d = new Date(event.start_time);
                   const startH = `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+                  const cat = CATEGORIES[(event as any).category as TaskCategory] || CATEGORIES.admin;
                   return (
-                    <div key={i} className="rounded-lg px-1.5 py-1 bg-primary/10 border border-primary/20 text-primary">
-                      <p className="text-[10px] font-bold truncate">{event.title}</p>
+                    <div key={i} className="rounded-lg px-1.5 py-1 border" style={{ backgroundColor: `${cat.colors.light}40`, borderColor: `${cat.colors.normal}30`, color: cat.colors.normal }}>
+                      <p className="text-[10px] font-bold truncate" style={{ color: "#2A2A2A" }}>{event.title}</p>
                       <p className="text-[9px] opacity-70">{startH}</p>
                     </div>
                   );
@@ -242,11 +248,14 @@ function MonthView({ events, currentDate, onDayClick }: { events: CalendarEvent[
           return (
             <div key={key} className={`min-h-[80px] p-1 border-b border-border/10 cursor-pointer hover:bg-primary/5 transition-colors ${isToday(day) ? "bg-primary/5" : ""} ${!isCurrentMonth ? "opacity-40" : ""}`} onClick={() => onDayClick?.(day)}>
               <p className={`text-[11px] font-bold mb-0.5 ${isToday(day) ? "text-primary" : "text-foreground"}`}>{format(day, "d")}</p>
-              {dayEvents.slice(0, 3).map((event, i) => (
-                <div key={i} className="rounded px-1 py-0.5 mb-0.5 bg-primary/10 text-primary truncate">
-                  <p className="text-[9px] font-medium truncate">{event.title}</p>
-                </div>
-              ))}
+              {dayEvents.slice(0, 3).map((event, i) => {
+                const cat = CATEGORIES[(event as any).category as TaskCategory] || CATEGORIES.admin;
+                return (
+                  <div key={i} className="rounded px-1 py-0.5 mb-0.5 truncate" style={{ backgroundColor: `${cat.colors.light}40`, color: cat.colors.normal }}>
+                    <p className="text-[9px] font-medium truncate" style={{ color: "#2A2A2A" }}>{event.title}</p>
+                  </div>
+                );
+              })}
               {dayEvents.length > 3 && <p className="text-[9px] text-muted-foreground">+{dayEvents.length - 3}</p>}
             </div>
           );
@@ -393,14 +402,17 @@ const GlobalPlanning = () => {
 
         {/* Routine zones legend */}
         {routineZones.length > 0 && (activeTab === "today" || selectedDay) && (
-          <div className="flex items-center gap-4 flex-wrap">
-            <span className="text-xs text-muted-foreground font-semibold">Zones de routine :</span>
-            {routineZones.filter((z, i, arr) => arr.findIndex(x => x.type === z.type) === i).map(z => (
-              <div key={z.type} className="flex items-center gap-1.5">
-                <span className="text-xs">{z.icon}</span>
-                <span className="text-[11px] text-muted-foreground">{z.label}</span>
-              </div>
-            ))}
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-xs text-muted-foreground font-semibold">Zones :</span>
+            {routineZones.filter((z, i, arr) => arr.findIndex(x => x.type === z.type) === i).map(z => {
+              const zoneColor = ZONE_STYLES[z.type];
+              return (
+                <div key={z.type} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ backgroundColor: zoneColor ? `${zoneColor.border}15` : undefined }}>
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: zoneColor?.border }} />
+                  <span className="text-[11px] font-medium" style={{ color: zoneColor?.border }}>{z.label}</span>
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -431,12 +443,24 @@ const GlobalPlanning = () => {
                 <h2 className="text-sm font-bold text-foreground mb-3">À planifier</h2>
                 <div className="space-y-2">
                   {unplannedTasks.length === 0 && <p className="text-xs text-muted-foreground">Tout est planifié 🎉</p>}
-                  {unplannedTasks.slice(0, 6).map(task => (
-                    <HoverCard key={task.id} className="p-3 rounded-2xl border border-dashed border-border hover:border-primary/30 transition-all">
-                      <p className="text-sm font-medium text-foreground">{task.action_label}</p>
-                      <span className={`pill text-[10px] font-bold px-2 py-0.5 mt-1 inline-block ${task.priority === "high" ? "bg-destructive/20 text-destructive-foreground" : "bg-muted text-muted-foreground"}`}>{task.priority}</span>
-                    </HoverCard>
-                  ))}
+                  {unplannedTasks.slice(0, 6).map(task => {
+                    const cat = CATEGORIES[(task as any).category as TaskCategory] || CATEGORIES.admin;
+                    const CatIcon = cat.icon;
+                    return (
+                      <HoverCard key={task.id} className="p-3 rounded-2xl border border-dashed transition-all" style={{ borderColor: `${cat.colors.normal}30`, backgroundColor: `${cat.colors.light}12` }}>
+                        <div className="flex items-center gap-2">
+                          <CatIcon className="w-3.5 h-3.5 shrink-0" style={{ color: cat.colors.normal }} />
+                          <p className="text-sm font-medium text-foreground truncate">{task.action_label}</p>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <span className="pill text-[10px] font-bold px-2 py-0.5" style={{ backgroundColor: `${cat.colors.light}50`, color: cat.colors.normal }}>{cat.label}</span>
+                          {task.priority === "high" && (
+                            <span className="pill text-[10px] font-bold px-2 py-0.5" style={{ backgroundColor: `${CATEGORIES.urgent.colors.light}50`, color: CATEGORIES.urgent.colors.normal }}>Prioritaire</span>
+                          )}
+                        </div>
+                      </HoverCard>
+                    );
+                  })}
                 </div>
               </div>
             </StaggerItem>

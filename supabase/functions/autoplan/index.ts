@@ -272,6 +272,15 @@ Tâches à placer (triées par priorité): ${JSON.stringify(correctedTasks)}
         other: "#64748B",
       };
 
+      // Map action_type to category
+      const categoryMap: Record<string, string> = {
+        WRITE: "focus", BUILD: "focus", LEARN: "focus",
+        MEETING: "meetings",
+        ADMIN: "admin", PLAN: "admin", REVIEW: "admin",
+        EMAIL: "communication", CALL: "communication",
+      };
+      const category = task.category || categoryMap[task.action_type] || "admin";
+
       await supabase.from("calendar_events").insert({
         title: task.action_label,
         start_time: item.start_time,
@@ -279,6 +288,7 @@ Tâches à placer (triées par priorité): ${JSON.stringify(correctedTasks)}
         structure_id: task.structure_id,
         source: "ai",
         color: colorMap[item.block_type] || "#A78BFA",
+        category,
       });
 
       await supabase.from("tasks").update({ due_date: today }).eq("id", task.id);
