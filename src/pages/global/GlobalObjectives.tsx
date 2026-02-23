@@ -281,13 +281,13 @@ const GlobalObjectives = () => {
   return (
     <PageTransition>
       <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <motion.div className="w-12 h-12 rounded-3xl bg-secondary/15 flex items-center justify-center shadow-soft" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}>
+            <motion.div className="w-12 h-12 rounded-3xl bg-secondary/15 flex items-center justify-center shadow-soft shrink-0" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}>
               <Target className="w-6 h-6 text-secondary" />
             </motion.div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Objectifs (Locke & Latham)</h1>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground truncate">Objectifs (Locke & Latham)</h1>
               <p className="text-sm text-muted-foreground">{parentGoals.length} objectifs · {goals.length - parentGoals.length} sous-objectifs</p>
             </div>
           </div>

@@ -168,22 +168,23 @@ const GlobalTasks = () => {
           )}
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1 p-1 bg-card/70 backdrop-blur-sm rounded-2xl shadow-soft">
+        <div className="space-y-3">
+          <div className="flex items-center gap-1 p-1 bg-card/70 backdrop-blur-sm rounded-2xl shadow-soft overflow-x-auto">
             {TABS.map(tab => (
-              <motion.button key={tab.key} onClick={() => setActiveTab(tab.key)} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === tab.key ? "gradient-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:text-foreground"}`}>
+              <motion.button key={tab.key} onClick={() => setActiveTab(tab.key)} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${activeTab === tab.key ? "gradient-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:text-foreground"}`}>
                 {tab.label}
               </motion.button>
             ))}
           </div>
-          <select value={filterStructure} onChange={e => setFilterStructure(e.target.value)} className="px-4 py-2 rounded-2xl border border-border bg-card/70 text-sm">
-            <option value="">Tous les espaces</option>
-            {structures.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
-          <div className="flex-1" />
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher..." className="pl-10 pr-4 py-2 rounded-2xl border border-border bg-card/70 text-sm shadow-inner-soft focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          <div className="flex items-center gap-2 flex-wrap">
+            <select value={filterStructure} onChange={e => setFilterStructure(e.target.value)} className="px-4 py-2 rounded-2xl border border-border bg-card/70 text-sm flex-1 min-w-0">
+              <option value="">Tous les espaces</option>
+              {structures.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+            <div className="relative flex-1 min-w-0">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher..." className="w-full pl-10 pr-4 py-2 rounded-2xl border border-border bg-card/70 text-sm shadow-inner-soft focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
           </div>
         </div>
 

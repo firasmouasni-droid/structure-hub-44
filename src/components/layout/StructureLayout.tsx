@@ -43,7 +43,7 @@ const StructureLayout = ({ children }: StructureLayoutProps) => {
         )}
       </AnimatePresence>
 
-      <main className="flex-1 overflow-y-auto bg-background flex flex-col">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background flex flex-col">
         {/* Mobile hamburger row */}
         <div className="flex items-center gap-2 px-4 py-2 lg:hidden">
           <button

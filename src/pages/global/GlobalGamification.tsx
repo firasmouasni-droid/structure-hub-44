@@ -66,13 +66,13 @@ const GlobalGamification = () => {
     <PageTransition>
       <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <motion.div className="w-12 h-12 rounded-3xl bg-warning/15 flex items-center justify-center shadow-soft" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}>
+        <div className="flex items-center gap-3 min-w-0">
+          <motion.div className="w-12 h-12 rounded-3xl bg-warning/15 flex items-center justify-center shadow-soft shrink-0" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}>
             <Trophy className="w-6 h-6 text-warning" />
           </motion.div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Gamification Scientifique</h1>
-            <p className="text-sm text-muted-foreground">Self-Determination Theory · Pas de punition · Récompenses intrinsèques</p>
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gamification Scientifique</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground truncate">Self-Determination Theory · Récompenses intrinsèques</p>
           </div>
         </div>
 
