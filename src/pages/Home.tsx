@@ -194,7 +194,7 @@ const Home = () => {
             </motion.p>
 
             {/* Actions */}
-            <div className="flex items-center gap-2 mt-3">
+            <div className="flex items-center justify-center gap-4 mt-3">
               {[
                 <motion.button
                   key="checkin"
