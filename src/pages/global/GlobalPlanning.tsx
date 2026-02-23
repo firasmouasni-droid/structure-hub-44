@@ -1,8 +1,8 @@
-import { useCalendarEvents, useCalendarEventsRange, useUpdateCalendarEvent, CalendarEvent } from "@/hooks/useCalendarEvents";
+import { useCalendarEvents, useCalendarEventsRange, useUpdateCalendarEvent, useDeleteCalendarEvent, CalendarEvent } from "@/hooks/useCalendarEvents";
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { useRoutines } from "@/hooks/useRoutines";
 import { useWorkHoursSettings, useUpsertWorkHours, DEFAULT_WORK_HOURS, getWorkBlocks, parseTime } from "@/hooks/useWorkHours";
-import { CalendarDays, Sparkles, Loader2, ChevronLeft, ChevronRight, Compass, Sun, Edit3, Clock, Settings } from "lucide-react";
+import { CalendarDays, Sparkles, Loader2, ChevronLeft, ChevronRight, Compass, Sun, Edit3, Clock, Settings, Trash2, X } from "lucide-react";
 import GuidedDayDialog from "@/components/guided/GuidedDayDialog";
 import MorningAuditDialog from "@/components/audit/MorningAuditDialog";
 import PlanningBlock from "@/components/planning/PlanningBlock";
@@ -126,12 +126,13 @@ function hasCollision(startMin: number, endMin: number, events: { startMin: numb
 }
 
 // ── Day view with 15-minute pixel grid + free drag ──
-function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize, workBlocks }: {
+function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize, onEventDelete, workBlocks }: {
   events: CalendarEvent[];
   routineZones: ReturnType<typeof getRoutineZones>;
   onEventMove?: (eventId: string, newStartMin: number) => void;
   onTaskDrop?: (taskId: string, startMin: number) => void;
   onEventResize?: (eventId: string, newEndMin: number) => void;
+  onEventDelete?: (eventId: string) => void;
   workBlocks: WorkBlock[];
 }) {
   const gridRef = useRef<HTMLDivElement>(null);
@@ -139,6 +140,7 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize,
   const [dragGhostDuration, setDragGhostDuration] = useState<number>(30);
   const [dragType, setDragType] = useState<"event" | "task" | null>(null);
   const [resizing, setResizing] = useState<{ eventId: string; startMin: number; currentEndMin: number } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const totalGridHeight = hours.length * HOUR_HEIGHT;
 
@@ -311,6 +313,7 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize,
               key={event.id}
               className="absolute z-10"
               style={{ left: "68px", right: "8px", top: `${topPx}px`, height: `${heightPx}px` }}
+              onClick={() => setDeleteConfirm(event.id)}
             >
               <PlanningBlock
                 eventId={event.id}
@@ -325,6 +328,34 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize,
                 onDragStart={(e) => handleEventDragStart(e, event)}
                 onDragEnd={() => { setDragGhostMin(null); setDragType(null); }}
               />
+              {/* Delete confirmation popover */}
+              {deleteConfirm === event.id && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9, y: -4 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  className="absolute top-full left-2 right-2 mt-1 z-50 bg-card border border-border/50 rounded-2xl shadow-lg p-3"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <p className="text-xs font-semibold text-foreground mb-2 truncate">{event.title}</p>
+                  <p className="text-[11px] text-muted-foreground mb-3">Supprimer cet événement ?</p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => { onEventDelete?.(event.id); setDeleteConfirm(null); }}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-destructive/10 text-destructive text-xs font-bold hover:bg-destructive/20 transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Supprimer
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm(null)}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-muted text-muted-foreground text-xs font-bold hover:bg-muted/80 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                      Annuler
+                    </button>
+                  </div>
+                </motion.div>
+              )}
               {/* Resize handle at bottom */}
               <div
                 className="absolute bottom-0 left-2 right-2 h-3 cursor-s-resize z-20 group/resize flex items-center justify-center"
@@ -590,6 +621,7 @@ const GlobalPlanning = () => {
   const { data: routines = [] } = useRoutines();
   const updateTask = useUpdateTask();
   const updateEvent = useUpdateCalendarEvent();
+  const deleteEvent = useDeleteCalendarEvent();
 
   const routine = routines.find(r => !r.structure_id) || routines[0] || null;
   const routineZones = getRoutineZones(routine);
@@ -643,6 +675,13 @@ const GlobalPlanning = () => {
       }
     );
   }, [events, updateEvent]);
+
+  const handleEventDelete = useCallback((eventId: string) => {
+    deleteEvent.mutate(eventId, {
+      onSuccess: () => toast.success("Événement supprimé !"),
+      onError: () => toast.error("Erreur lors de la suppression"),
+    });
+  }, [deleteEvent]);
 
   const handleTaskDrop = useCallback(async (taskId: string, startMin: number) => {
     const task = allTasks.find(t => t.id === taskId);
@@ -904,12 +943,12 @@ const GlobalPlanning = () => {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <FadeInSection className="lg:col-span-3">
+           <FadeInSection className="lg:col-span-3">
              {selectedDay ? (
-              <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} onEventResize={handleEventResize} workBlocks={workBlocks} />
+              <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} onEventResize={handleEventResize} onEventDelete={handleEventDelete} workBlocks={workBlocks} />
             ) : (
               <>
-                {activeTab === "today" && <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} onEventResize={handleEventResize} workBlocks={workBlocks} />}
+                {activeTab === "today" && <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} onEventResize={handleEventResize} onEventDelete={handleEventDelete} workBlocks={workBlocks} />}
                 {activeTab === "week" && <WeekView events={events} weekStart={startOfWeek(currentDate, { weekStartsOn: 1 })} onDayClick={handleDayClick} />}
                 {activeTab === "month" && <MonthView events={events} currentDate={currentDate} onDayClick={handleDayClick} />}
               </>

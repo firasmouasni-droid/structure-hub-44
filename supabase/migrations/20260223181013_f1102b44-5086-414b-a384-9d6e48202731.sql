@@ -1,0 +1,1 @@
+CREATE POLICY "Allow public delete calendar_events" ON public.calendar_events FOR DELETE USING (true);
