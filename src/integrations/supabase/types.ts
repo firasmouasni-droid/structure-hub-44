@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       calendar_events: {
         Row: {
+          color: string | null
           created_at: string
           end_time: string
           id: string
@@ -25,6 +26,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          color?: string | null
           created_at?: string
           end_time: string
           id?: string
@@ -34,6 +36,7 @@ export type Database = {
           title: string
         }
         Update: {
+          color?: string | null
           created_at?: string
           end_time?: string
           id?: string
@@ -130,6 +133,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "goals_structure_id_fkey"
+            columns: ["structure_id"]
+            isOneToOne: false
+            referencedRelation: "structures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      routines: {
+        Row: {
+          afternoon_tasks: Json | null
+          availability_rules: Json | null
+          created_at: string
+          email_slots: Json | null
+          id: string
+          morning_focus: Json | null
+          structure_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          afternoon_tasks?: Json | null
+          availability_rules?: Json | null
+          created_at?: string
+          email_slots?: Json | null
+          id?: string
+          morning_focus?: Json | null
+          structure_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          afternoon_tasks?: Json | null
+          availability_rules?: Json | null
+          created_at?: string
+          email_slots?: Json | null
+          id?: string
+          morning_focus?: Json | null
+          structure_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routines_structure_id_fkey"
             columns: ["structure_id"]
             isOneToOne: false
             referencedRelation: "structures"

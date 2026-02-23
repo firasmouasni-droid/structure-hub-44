@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Inbox, CheckSquare, Calendar, Bot, Settings,
+  LayoutDashboard, Inbox, CheckSquare, Calendar, Bot, Settings, Plug,
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { useStructures } from "@/hooks/useStructures";
@@ -13,6 +13,7 @@ const mainNav = [
   { label: "Tâches", icon: CheckSquare, path: "/tasks" },
   { label: "Planning", icon: Calendar, path: "/planning" },
   { label: "Coach IA", icon: Bot, path: "/coach" },
+  { label: "Connecteurs", icon: Plug, path: "/connectors" },
 ];
 
 interface SidebarProps {
@@ -33,7 +34,6 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
 
   return (
     <aside className="w-64 h-screen bg-card/90 backdrop-blur-sm border-r border-border/50 flex flex-col transition-colors duration-300">
-      {/* Logo */}
       <div className="px-5 py-5">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl gradient-primary flex items-center justify-center shadow-soft">
