@@ -26,6 +26,7 @@ import StructureRoutines from "./pages/structure/StructureRoutines";
 import StructureCoach from "./pages/structure/StructureCoach";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
+import ComingSoon from "./pages/ComingSoon";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,9 @@ const App = () => (
         <Routes>
           {/* Home — no layout */}
           <Route path="/" element={<Home />} />
+
+          {/* Life Spaces — Coming Soon for inactive */}
+          <Route path="/spaces/:spaceKey" element={<ComingSoon />} />
 
           {/* Global HQ — AppLayout with sidebar */}
           <Route path="/global/dashboard" element={<AppLayout><GlobalDashboard /></AppLayout>} />
@@ -68,5 +72,4 @@ const App = () => (
     </TooltipProvider>
   </QueryClientProvider>
 );
-
 export default App;

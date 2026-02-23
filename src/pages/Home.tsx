@@ -1,5 +1,6 @@
 import { useStructures, useCreateStructure } from "@/hooks/useStructures";
-import { Plus, Brain, ArrowRight, CheckSquare, Inbox, Calendar, Bot, Target, Clock } from "lucide-react";
+import { useLifeSpaces } from "@/hooks/useLifeSpaces";
+import { Plus, Brain, ArrowRight, CheckSquare, Inbox, Calendar, Bot, Target, Clock, Lock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -20,7 +21,8 @@ const COLORS = [
 ];
 
 const Home = () => {
-  const { data: structures = [], isLoading } = useStructures();
+  const { data: structures = [], isLoading: structuresLoading } = useStructures();
+  const { data: lifeSpaces = [], isLoading: spacesLoading } = useLifeSpaces();
   const { data: stats } = useUserStats();
   const { data: allTasks = [] } = useTasks({ isInbox: false });
   const createStructure = useCreateStructure();
@@ -29,7 +31,8 @@ const Home = () => {
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [onboardingDismissed, setOnboardingDismissed] = useState(false);
 
-  // Auto-open onboarding when no structures exist
+  const isLoading = structuresLoading || spacesLoading;
+
   useEffect(() => {
     if (!isLoading && structures.length === 0 && !onboardingDismissed) {
       setOnboardingOpen(true);
@@ -48,6 +51,9 @@ const Home = () => {
   const xp = stats?.xp ?? 0;
   const streak = stats?.streak_days ?? 0;
 
+  const enabledSpaces = lifeSpaces.filter((s) => s.enabled);
+  const disabledSpaces = lifeSpaces.filter((s) => !s.enabled);
+
   return (
     <div className="min-h-screen bg-background">
       <PageTransition>
@@ -60,8 +66,8 @@ const Home = () => {
                   <Brain className="w-8 h-8 text-primary-foreground" />
                 </motion.div>
                 <div>
-                  <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Second Cerveau</h1>
-                  <p className="text-sm text-muted-foreground mt-0.5">Choisis un espace de travail</p>
+                  <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Mon Life OS</h1>
+                  <p className="text-sm text-muted-foreground mt-0.5">Pilote ta vie, un espace à la fois</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -79,7 +85,7 @@ const Home = () => {
             </div>
           </motion.div>
 
-          {/* Global HQ Section */}
+          {/* Quick Access - Global HQ */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="space-y-4">
             <Link to="/global/dashboard">
               <HoverCard className="card-soft p-6 group cursor-pointer border-2 border-primary/20 hover:border-primary/40 transition-all">
@@ -90,7 +96,7 @@ const Home = () => {
                     </div>
                     <div>
                       <h2 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">QG Général</h2>
-                      <p className="text-xs text-muted-foreground">Vue globale de toutes vos structures</p>
+                      <p className="text-xs text-muted-foreground">Vue consolidée de tous tes espaces de vie</p>
                     </div>
                   </div>
                   <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -98,7 +104,6 @@ const Home = () => {
               </HoverCard>
             </Link>
 
-            {/* Quick access grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               {[
                 { label: "Tâches", icon: CheckSquare, path: "/global/tasks", color: "bg-primary/10 text-primary" },
@@ -109,11 +114,7 @@ const Home = () => {
                 { label: "Coach IA", icon: Bot, path: "/global/coach", color: "bg-primary/10 text-primary" },
               ].map((item) => (
                 <Link key={item.path} to={item.path}>
-                  <motion.div
-                    whileHover={{ scale: 1.04, y: -2 }}
-                    whileTap={{ scale: 0.97 }}
-                    className="card-soft p-4 flex flex-col items-center gap-2 cursor-pointer hover:shadow-md transition-shadow"
-                  >
+                  <motion.div whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.97 }} className="card-soft p-4 flex flex-col items-center gap-2 cursor-pointer hover:shadow-md transition-shadow">
                     <div className={`w-10 h-10 rounded-2xl ${item.color} flex items-center justify-center`}>
                       <item.icon className="w-5 h-5" />
                     </div>
@@ -124,72 +125,164 @@ const Home = () => {
             </div>
           </motion.div>
 
-          {/* Structure Cards */}
-          <div>
-            <h2 className="text-lg font-bold text-foreground mb-4">Espaces de travail</h2>
+          {/* Life Spaces - Active */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-bold text-foreground">Espaces de vie</h2>
             <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {structures.map((s) => {
-                const taskCount = allTasks.filter(t => t.structure_id === s.id).length;
-                const doneCount = allTasks.filter(t => t.structure_id === s.id && t.status === "done").length;
-                const progress = taskCount > 0 ? Math.round((doneCount / taskCount) * 100) : 0;
+              {enabledSpaces.map((space) => {
+                const spaceStructures = structures.filter(s => s.life_space_id === space.id);
+                const taskCount = allTasks.filter(t => spaceStructures.some(s => s.id === t.structure_id)).length;
                 return (
-                  <StaggerItem key={s.id}>
-                    <Link to={`/structures/${s.id}/dashboard`}>
-                      <HoverCard className="card-soft p-6 group cursor-pointer">
-                        <div className="flex items-center gap-4 mb-4">
-                          <motion.div className={`w-14 h-14 rounded-3xl ${s.color} flex items-center justify-center shadow-soft`} whileHover={{ scale: 1.1, rotate: 5 }}>
-                            <span className="text-white text-xl font-bold">{s.name.charAt(0)}</span>
+                  <StaggerItem key={space.id}>
+                    <Link to={`/spaces/${space.key}`}>
+                      <HoverCard className="card-soft p-6 group cursor-pointer border-2 border-transparent hover:border-primary/30 transition-all">
+                        <div className="flex items-center gap-4 mb-3">
+                          <motion.div className={`w-14 h-14 rounded-3xl ${space.color} flex items-center justify-center shadow-soft`} whileHover={{ scale: 1.1, rotate: 5 }}>
+                            <span className="text-2xl">{space.icon}</span>
                           </motion.div>
                           <div>
-                            <h2 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">{s.name}</h2>
-                            {s.description && <p className="text-xs text-muted-foreground line-clamp-1">{s.description}</p>}
+                            <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">{space.label}</h3>
+                            <p className="text-xs text-muted-foreground">{space.description}</p>
                           </div>
                         </div>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">{taskCount} tâches · {doneCount} faites</span>
-                            <span className="font-bold text-foreground">{progress}%</span>
-                          </div>
-                          <div className="h-2 bg-muted rounded-pill overflow-hidden">
-                            <motion.div className="h-full gradient-primary rounded-pill" initial={{ width: 0 }} whileInView={{ width: `${progress}%` }} viewport={{ once: true }} transition={{ duration: 0.8, ease: "easeOut" }} />
-                          </div>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span>{spaceStructures.length} structure{spaceStructures.length !== 1 ? "s" : ""}</span>
+                          <span>·</span>
+                          <span>{taskCount} tâche{taskCount !== 1 ? "s" : ""}</span>
                         </div>
                       </HoverCard>
                     </Link>
                   </StaggerItem>
                 );
               })}
-
-              <StaggerItem>
-                <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (open) { setOnboardingOpen(false); setOnboardingDismissed(true); } }}>
-                  <DialogTrigger asChild>
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="card-soft p-6 border-2 border-dashed border-border hover:border-primary/40 cursor-pointer flex flex-col items-center justify-center min-h-[180px] transition-all">
-                      <div className="w-14 h-14 rounded-3xl bg-muted flex items-center justify-center mb-3"><Plus className="w-7 h-7 text-muted-foreground" /></div>
-                      <p className="text-sm font-semibold text-muted-foreground">Ajouter un espace</p>
-                    </motion.div>
-                  </DialogTrigger>
-                  <DialogContent className="rounded-3xl border-border/50">
-                    <DialogHeader><DialogTitle className="text-lg font-bold">Nouvel espace de travail</DialogTitle></DialogHeader>
-                    <div className="space-y-4 mt-2">
-                      <input placeholder="Nom de l'espace (ex: Académia, Side Project...)" value={newStructure.name} onChange={e => setNewStructure(p => ({ ...p, name: e.target.value }))} className="w-full px-4 py-3 rounded-2xl border border-border bg-card/90 text-sm shadow-inner-soft focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors duration-300" />
-                      <textarea placeholder="Description (optionnel)" value={newStructure.description} onChange={e => setNewStructure(p => ({ ...p, description: e.target.value }))} rows={2} className="w-full px-4 py-3 rounded-2xl border border-border bg-card/90 text-sm shadow-inner-soft focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors duration-300 resize-none" />
-                      <div>
-                        <p className="text-xs font-semibold text-muted-foreground mb-2">Couleur</p>
-                        <div className="flex gap-2">
-                          {COLORS.map(c => (
-                            <motion.button key={c.value} whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} onClick={() => setNewStructure(p => ({ ...p, color: c.value }))} className={`w-10 h-10 rounded-2xl ${c.value} ${newStructure.color === c.value ? "ring-3 ring-foreground/30 ring-offset-2 ring-offset-background" : ""} transition-all`} />
-                          ))}
-                        </div>
-                      </div>
-                      <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} onClick={handleCreate} disabled={createStructure.isPending} className="w-full py-3 rounded-2xl gradient-primary text-primary-foreground text-sm font-bold shadow-soft">
-                        {createStructure.isPending ? "Création..." : "Créer l'espace"}
-                      </motion.button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </StaggerItem>
             </StaggerContainer>
           </div>
+
+          {/* Life Spaces - Coming Soon */}
+          {disabledSpaces.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Bientôt disponibles</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {disabledSpaces.map((space) => (
+                  <Link key={space.id} to={`/spaces/${space.key}`}>
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      className="card-soft p-4 flex flex-col items-center gap-3 opacity-60 hover:opacity-80 transition-opacity cursor-pointer relative"
+                    >
+                      <div className={`w-12 h-12 rounded-2xl ${space.color} flex items-center justify-center`}>
+                        <span className="text-xl">{space.icon}</span>
+                      </div>
+                      <span className="text-xs font-semibold text-foreground text-center">{space.label}</span>
+                      <div className="absolute top-2 right-2">
+                        <Lock className="w-3 h-3 text-muted-foreground" />
+                      </div>
+                    </motion.div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Structures (sub-spaces) */}
+          {structures.length > 0 && (
+            <div>
+              <h2 className="text-lg font-bold text-foreground mb-4">Structures</h2>
+              <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {structures.map((s) => {
+                  const taskCount = allTasks.filter(t => t.structure_id === s.id).length;
+                  const doneCount = allTasks.filter(t => t.structure_id === s.id && t.status === "done").length;
+                  const progress = taskCount > 0 ? Math.round((doneCount / taskCount) * 100) : 0;
+                  return (
+                    <StaggerItem key={s.id}>
+                      <Link to={`/structures/${s.id}/dashboard`}>
+                        <HoverCard className="card-soft p-6 group cursor-pointer">
+                          <div className="flex items-center gap-4 mb-4">
+                            <motion.div className={`w-14 h-14 rounded-3xl ${s.color} flex items-center justify-center shadow-soft`} whileHover={{ scale: 1.1, rotate: 5 }}>
+                              <span className="text-white text-xl font-bold">{s.name.charAt(0)}</span>
+                            </motion.div>
+                            <div>
+                              <h2 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">{s.name}</h2>
+                              {s.description && <p className="text-xs text-muted-foreground line-clamp-1">{s.description}</p>}
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">{taskCount} tâches · {doneCount} faites</span>
+                              <span className="font-bold text-foreground">{progress}%</span>
+                            </div>
+                            <div className="h-2 bg-muted rounded-pill overflow-hidden">
+                              <motion.div className="h-full gradient-primary rounded-pill" initial={{ width: 0 }} whileInView={{ width: `${progress}%` }} viewport={{ once: true }} transition={{ duration: 0.8, ease: "easeOut" }} />
+                            </div>
+                          </div>
+                        </HoverCard>
+                      </Link>
+                    </StaggerItem>
+                  );
+                })}
+
+                <StaggerItem>
+                  <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (open) { setOnboardingOpen(false); setOnboardingDismissed(true); } }}>
+                    <DialogTrigger asChild>
+                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="card-soft p-6 border-2 border-dashed border-border hover:border-primary/40 cursor-pointer flex flex-col items-center justify-center min-h-[180px] transition-all">
+                        <div className="w-14 h-14 rounded-3xl bg-muted flex items-center justify-center mb-3"><Plus className="w-7 h-7 text-muted-foreground" /></div>
+                        <p className="text-sm font-semibold text-muted-foreground">Ajouter une structure</p>
+                      </motion.div>
+                    </DialogTrigger>
+                    <DialogContent className="rounded-3xl border-border/50">
+                      <DialogHeader><DialogTitle className="text-lg font-bold">Nouvelle structure</DialogTitle></DialogHeader>
+                      <div className="space-y-4 mt-2">
+                        <input placeholder="Nom (ex: Académia, Side Project...)" value={newStructure.name} onChange={e => setNewStructure(p => ({ ...p, name: e.target.value }))} className="w-full px-4 py-3 rounded-2xl border border-border bg-card/90 text-sm shadow-inner-soft focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors duration-300" />
+                        <textarea placeholder="Description (optionnel)" value={newStructure.description} onChange={e => setNewStructure(p => ({ ...p, description: e.target.value }))} rows={2} className="w-full px-4 py-3 rounded-2xl border border-border bg-card/90 text-sm shadow-inner-soft focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors duration-300 resize-none" />
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground mb-2">Couleur</p>
+                          <div className="flex gap-2">
+                            {COLORS.map(c => (
+                              <motion.button key={c.value} whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} onClick={() => setNewStructure(p => ({ ...p, color: c.value }))} className={`w-10 h-10 rounded-2xl ${c.value} ${newStructure.color === c.value ? "ring-3 ring-foreground/30 ring-offset-2 ring-offset-background" : ""} transition-all`} />
+                            ))}
+                          </div>
+                        </div>
+                        <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} onClick={handleCreate} disabled={createStructure.isPending} className="w-full py-3 rounded-2xl gradient-primary text-primary-foreground text-sm font-bold shadow-soft">
+                          {createStructure.isPending ? "Création..." : "Créer la structure"}
+                        </motion.button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </StaggerItem>
+              </StaggerContainer>
+            </div>
+          )}
+
+          {/* Add structure button when none exist */}
+          {structures.length === 0 && !isLoading && (
+            <div>
+              <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (open) { setOnboardingOpen(false); setOnboardingDismissed(true); } }}>
+                <DialogTrigger asChild>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="card-soft p-6 border-2 border-dashed border-border hover:border-primary/40 cursor-pointer flex flex-col items-center justify-center min-h-[140px] transition-all">
+                    <div className="w-14 h-14 rounded-3xl bg-muted flex items-center justify-center mb-3"><Plus className="w-7 h-7 text-muted-foreground" /></div>
+                    <p className="text-sm font-semibold text-muted-foreground">Créer ta première structure</p>
+                  </motion.div>
+                </DialogTrigger>
+                <DialogContent className="rounded-3xl border-border/50">
+                  <DialogHeader><DialogTitle className="text-lg font-bold">Nouvelle structure</DialogTitle></DialogHeader>
+                  <div className="space-y-4 mt-2">
+                    <input placeholder="Nom (ex: Académia, Side Project...)" value={newStructure.name} onChange={e => setNewStructure(p => ({ ...p, name: e.target.value }))} className="w-full px-4 py-3 rounded-2xl border border-border bg-card/90 text-sm shadow-inner-soft focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors duration-300" />
+                    <textarea placeholder="Description (optionnel)" value={newStructure.description} onChange={e => setNewStructure(p => ({ ...p, description: e.target.value }))} rows={2} className="w-full px-4 py-3 rounded-2xl border border-border bg-card/90 text-sm shadow-inner-soft focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors duration-300 resize-none" />
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground mb-2">Couleur</p>
+                      <div className="flex gap-2">
+                        {COLORS.map(c => (
+                          <motion.button key={c.value} whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} onClick={() => setNewStructure(p => ({ ...p, color: c.value }))} className={`w-10 h-10 rounded-2xl ${c.value} ${newStructure.color === c.value ? "ring-3 ring-foreground/30 ring-offset-2 ring-offset-background" : ""} transition-all`} />
+                        ))}
+                      </div>
+                    </div>
+                    <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} onClick={handleCreate} disabled={createStructure.isPending} className="w-full py-3 rounded-2xl gradient-primary text-primary-foreground text-sm font-bold shadow-soft">
+                      {createStructure.isPending ? "Création..." : "Créer la structure"}
+                    </motion.button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          )}
 
           {isLoading && <p className="text-sm text-muted-foreground text-center py-8">Chargement...</p>}
 

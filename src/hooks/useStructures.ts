@@ -8,6 +8,7 @@ export interface Structure {
   color: string;
   description: string | null;
   owner_id: string | null;
+  life_space_id: string | null;
   created_at: string;
 }
 
