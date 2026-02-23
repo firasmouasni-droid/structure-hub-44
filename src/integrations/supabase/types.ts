@@ -256,6 +256,9 @@ export type Database = {
           id: string
           importance: number
           is_inbox: boolean
+          is_refined: boolean
+          next_action: string | null
+          parent_task_id: string | null
           priority: string
           source: string
           status: string
@@ -276,6 +279,9 @@ export type Database = {
           id?: string
           importance?: number
           is_inbox?: boolean
+          is_refined?: boolean
+          next_action?: string | null
+          parent_task_id?: string | null
           priority?: string
           source?: string
           status?: string
@@ -296,6 +302,9 @@ export type Database = {
           id?: string
           importance?: number
           is_inbox?: boolean
+          is_refined?: boolean
+          next_action?: string | null
+          parent_task_id?: string | null
           priority?: string
           source?: string
           status?: string
@@ -303,6 +312,13 @@ export type Database = {
           urgency?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tasks_structure_id_fkey"
             columns: ["structure_id"]
