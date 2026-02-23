@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/motion/MotionWrappers";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
@@ -155,7 +155,7 @@ const Home = () => {
                 <h2 className="text-lg font-bold text-foreground">Tâches urgentes</h2>
                 <Link to="/global/tasks" className="text-xs text-primary font-medium hover:underline flex items-center gap-1">Toutes les tâches <ArrowRight className="w-3 h-3" /></Link>
               </div>
-              <div className="space-y-2">
+              <AnimatePresence mode="popLayout">
                 {urgentTasks.map(t => {
                   const struct = structures.find(s => s.id === t.structure_id);
                   const priorityStyle: Record<string, string> = {
@@ -165,32 +165,40 @@ const Home = () => {
                     low: "bg-muted text-muted-foreground",
                   };
                   return (
-                    <HoverCard key={t.id} className="card-soft p-4 flex items-center gap-4">
-                      <motion.button
-                        whileHover={{ scale: 1.15 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => {
-                          updateTask.mutate({ id: t.id, status: "done" });
-                          toast.success(`"${t.action_label}" terminée ✓`);
-                        }}
-                        className="w-9 h-9 rounded-2xl bg-muted/50 hover:bg-success/20 flex items-center justify-center shrink-0 transition-colors group"
-                      >
-                        <Circle className="w-5 h-5 text-muted-foreground group-hover:hidden" />
-                        <CheckCircle2 className="w-5 h-5 text-success hidden group-hover:block" />
-                      </motion.button>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">{t.action_label}</p>
-                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                          {struct && <span>{struct.name}</span>}
-                          {t.due_date && <span>· {t.due_date === todayStr ? "Aujourd'hui" : format(new Date(t.due_date), "d MMM", { locale: fr })}</span>}
-                          {t.estimated_duration && <span>· {t.estimated_duration} min</span>}
+                    <motion.div
+                      key={t.id}
+                      layout
+                      initial={{ opacity: 1, x: 0, height: "auto" }}
+                      exit={{ opacity: 0, x: 80, height: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
+                      transition={{ duration: 0.35, ease: "easeInOut" }}
+                    >
+                      <HoverCard className="card-soft p-4 flex items-center gap-4">
+                        <motion.button
+                          whileHover={{ scale: 1.15 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => {
+                            updateTask.mutate({ id: t.id, status: "done" });
+                            toast.success(`"${t.action_label}" terminée ✓`);
+                          }}
+                          className="w-9 h-9 rounded-2xl bg-muted/50 hover:bg-success/20 flex items-center justify-center shrink-0 transition-colors group"
+                        >
+                          <Circle className="w-5 h-5 text-muted-foreground group-hover:hidden" />
+                          <CheckCircle2 className="w-5 h-5 text-success hidden group-hover:block" />
+                        </motion.button>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-foreground truncate">{t.action_label}</p>
+                          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                            {struct && <span>{struct.name}</span>}
+                            {t.due_date && <span>· {t.due_date === todayStr ? "Aujourd'hui" : format(new Date(t.due_date), "d MMM", { locale: fr })}</span>}
+                            {t.estimated_duration && <span>· {t.estimated_duration} min</span>}
+                          </div>
                         </div>
-                      </div>
-                      <span className={`pill px-2 py-0.5 text-[10px] font-bold ${priorityStyle[t.priority] ?? priorityStyle.medium}`}>{t.priority}</span>
-                    </HoverCard>
+                        <span className={`pill px-2 py-0.5 text-[10px] font-bold ${priorityStyle[t.priority] ?? priorityStyle.medium}`}>{t.priority}</span>
+                      </HoverCard>
+                    </motion.div>
                   );
                 })}
-              </div>
+              </AnimatePresence>
             </motion.div>
           )}
 
