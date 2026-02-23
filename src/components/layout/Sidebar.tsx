@@ -14,7 +14,11 @@ const mainNav = [
   { label: "Coach IA", icon: Bot, path: "/coach" },
 ];
 
-export const Sidebar = () => {
+interface SidebarProps {
+  onNavigate?: () => void;
+}
+
+export const Sidebar = ({ onNavigate }: SidebarProps) => {
   const location = useLocation();
   const { data: structures = [] } = useStructures();
   const { data: stats } = useUserStats();
@@ -47,7 +51,7 @@ export const Sidebar = () => {
           const isActive = location.pathname === item.path;
           const badge = item.path === "/inbox" && inboxCount > 0 ? inboxCount : null;
           return (
-            <Link key={item.path} to={item.path} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${isActive ? "gradient-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+            <Link key={item.path} to={item.path} onClick={onNavigate} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${isActive ? "gradient-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
               <item.icon className="w-[18px] h-[18px]" />
               <span>{item.label}</span>
               {badge && (
@@ -61,7 +65,7 @@ export const Sidebar = () => {
         {structures.map((item) => {
           const isActive = location.pathname === `/structure/${item.id}`;
           return (
-            <Link key={item.id} to={`/structure/${item.id}`} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${isActive ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+            <Link key={item.id} to={`/structure/${item.id}`} onClick={onNavigate} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${isActive ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
               <div className={`w-3 h-3 rounded-full ${item.color}`} />
               <span>{item.name}</span>
             </Link>
@@ -70,7 +74,7 @@ export const Sidebar = () => {
       </nav>
 
       <div className="p-4 border-t border-border/50">
-        <Link to="/settings" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all">
+        <Link to="/settings" onClick={onNavigate} className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all">
           <Settings className="w-[18px] h-[18px]" /><span>Paramètres</span>
         </Link>
         <div className="mt-4 px-2">

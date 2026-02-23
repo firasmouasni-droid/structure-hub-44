@@ -81,10 +81,10 @@ const Dashboard = () => {
             <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/15 to-accent/10" />
             <div className="relative px-6 lg:px-8 pt-8 pb-10">
               <div className="max-w-7xl mx-auto">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                  <div className="flex items-center gap-3 sm:gap-4">
                     <motion.div
-                      className="w-16 h-16 rounded-3xl gradient-primary shadow-soft flex items-center justify-center text-primary-foreground font-bold text-xl ring-4 ring-white/50"
+                      className="w-12 h-12 sm:w-16 sm:h-16 rounded-3xl gradient-primary shadow-soft flex items-center justify-center text-primary-foreground font-bold text-lg sm:text-xl ring-4 ring-white/50"
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
@@ -92,23 +92,23 @@ const Dashboard = () => {
                       AM
                     </motion.div>
                     <div>
-                      <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Hello, Alexandre 👋</h1>
+                      <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Hello, Alexandre 👋</h1>
                       <p className="text-muted-foreground text-sm mt-0.5 capitalize">{dateStr}</p>
                     </div>
                   </div>
                   <motion.div
-                    className="flex items-center gap-3"
+                    className="flex items-center gap-2 sm:gap-3"
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3, duration: 0.4 }}
                   >
-                    <div className="pill px-4 py-2 bg-white/70 backdrop-blur-sm shadow-soft flex items-center gap-2">
-                      <Flame className="w-4 h-4 text-warning" />
-                      <span className="text-sm font-bold text-foreground">{streak}j</span>
+                    <div className="pill px-3 py-1.5 sm:px-4 sm:py-2 bg-white/70 backdrop-blur-sm shadow-soft flex items-center gap-1.5 sm:gap-2">
+                      <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-warning" />
+                      <span className="text-xs sm:text-sm font-bold text-foreground">{streak}j</span>
                     </div>
-                    <div className="pill px-4 py-2 gradient-warm shadow-soft flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-primary-foreground" />
-                      <span className="text-sm font-bold text-primary-foreground">Score {score}%</span>
+                    <div className="pill px-3 py-1.5 sm:px-4 sm:py-2 gradient-warm shadow-soft flex items-center gap-1.5 sm:gap-2">
+                      <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary-foreground" />
+                      <span className="text-xs sm:text-sm font-bold text-primary-foreground">Score {score}%</span>
                     </div>
                   </motion.div>
                 </div>
