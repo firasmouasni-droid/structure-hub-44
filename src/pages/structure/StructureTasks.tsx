@@ -3,6 +3,7 @@ import { useStructure } from "@/hooks/useStructures";
 import { useIncrementXP } from "@/hooks/useUserStats";
 import { Plus, Search, Brain, Scissors, AlertTriangle } from "lucide-react";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -31,6 +32,7 @@ const StructureTasks = () => {
   const updateTask = useUpdateTask();
   const incrementXP = useIncrementXP();
   const wip = useWIPStatus();
+  const qc = useQueryClient();
 
   const [activeTab, setActiveTab] = useState("all");
   const [search, setSearch] = useState("");
@@ -85,6 +87,7 @@ const StructureTasks = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success(data.subtasks_created > 0 ? `Découpée en ${data.subtasks_created} sous-tâches 🧩` : "Reformulée ✨");
+      qc.invalidateQueries({ queryKey: ["tasks"] });
     } catch (err: any) { toast.error(err.message || "Erreur"); }
     setRefiningId(null);
   };
