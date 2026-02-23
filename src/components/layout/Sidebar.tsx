@@ -15,6 +15,7 @@ const globalNav = [
   { label: "Tâches", icon: CheckSquare, path: "/global/tasks" },
   { label: "Inbox IA", icon: Inbox, path: "/global/inbox" },
   { label: "Planning", icon: Calendar, path: "/global/planning" },
+  { label: "Routines", icon: Clock, path: "/global/routines" },
   { label: "Objectifs", icon: Target, path: "/global/objectives" },
   { label: "Analytics", icon: BarChart3, path: "/global/analytics" },
   { label: "Gamification", icon: Trophy, path: "/global/gamification" },
