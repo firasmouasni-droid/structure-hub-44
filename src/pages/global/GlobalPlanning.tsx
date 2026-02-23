@@ -9,14 +9,18 @@ import { CATEGORIES, CATEGORY_LIST, type TaskCategory, getCategoryColor } from "
 import { useTodayAudit, useAuditSettings, getAuditAdaptation } from "@/hooks/useDailyAudit";
 import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay, eachDayOfInterval, isToday, getDay } from "date-fns";
 import { fr } from "date-fns/locale";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard, FadeInSection } from "@/components/motion/MotionWrappers";
 import { motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 
-const hours = Array.from({ length: 14 }, (_, i) => i + 7);
+const SLOT_HEIGHT = 17; // px per 15-min slot
+const HOUR_HEIGHT = SLOT_HEIGHT * 4; // 68px per hour
+const START_HOUR = 7;
+const END_HOUR = 21;
+const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => i + START_HOUR);
 const TABS = [
   { key: "today", label: "Aujourd'hui" },
   { key: "week", label: "Semaine" },
@@ -26,8 +30,6 @@ const TABS = [
 function getRoutineZones(routine: any) {
   if (!routine) return [];
   const zones: { start: number; end: number; label: string; type: string; icon: string }[] = [];
-
-  // Use blocks array if available (Module 1 routines)
   const blocks = routine.blocks as any[];
   if (Array.isArray(blocks) && blocks.length > 0) {
     const iconMap: Record<string, string> = { deep_work: "🔴", admin: "☕", meetings: "☕", email: "📧", break: "⏸" };
@@ -36,33 +38,16 @@ function getRoutineZones(routine: any) {
       const startH = parseInt(b.start?.split(":")[0] || "0");
       const endH = parseInt(b.end?.split(":")[0] || "0");
       const endM = parseInt(b.end?.split(":")[1] || "0");
-      zones.push({
-        start: startH,
-        end: endM > 0 ? endH + 1 : endH,
-        label: b.label || b.type,
-        type: b.type === "meetings" ? "admin" : b.type,
-        icon: iconMap[b.type] || "☕",
-      });
+      zones.push({ start: startH, end: endM > 0 ? endH + 1 : endH, label: b.label || b.type, type: b.type === "meetings" ? "admin" : b.type, icon: iconMap[b.type] || "☕" });
     }
     return zones;
   }
-
-  // Fallback to legacy morning_focus / afternoon_tasks
   const mf = routine.morning_focus as any;
   const af = routine.afternoon_tasks as any;
   const es = routine.email_slots as any;
-  if (mf?.start && mf?.end) {
-    zones.push({ start: parseInt(mf.start.split(":")[0]), end: parseInt(mf.end.split(":")[0]), label: mf.focus === "deep_work" ? "Deep Work" : "Focus", type: "deep_work", icon: "🧠" });
-  }
-  if (af?.start && af?.end) {
-    zones.push({ start: parseInt(af.start.split(":")[0]), end: parseInt(af.end.split(":")[0]), label: af.focus === "meetings_admin" ? "Meetings & Admin" : "Admin", type: "admin", icon: "☕" });
-  }
-  if (Array.isArray(es)) {
-    for (const slot of es) {
-      const h = parseInt(slot.split(":")[0]);
-      zones.push({ start: h, end: h + 1, label: "Emails", type: "email", icon: "📧" });
-    }
-  }
+  if (mf?.start && mf?.end) zones.push({ start: parseInt(mf.start.split(":")[0]), end: parseInt(mf.end.split(":")[0]), label: mf.focus === "deep_work" ? "Deep Work" : "Focus", type: "deep_work", icon: "🧠" });
+  if (af?.start && af?.end) zones.push({ start: parseInt(af.start.split(":")[0]), end: parseInt(af.end.split(":")[0]), label: af.focus === "meetings_admin" ? "Meetings & Admin" : "Admin", type: "admin", icon: "☕" });
+  if (Array.isArray(es)) for (const slot of es) { const h = parseInt(slot.split(":")[0]); zones.push({ start: h, end: h + 1, label: "Emails", type: "email", icon: "📧" }); }
   return zones;
 }
 
@@ -75,101 +60,195 @@ const ZONE_STYLES: Record<string, { bg: string; border: string }> = {
 
 const DAY_NAMES_SHORT = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
-// ── Day view (hourly grid) with drag-and-drop + category colors ──
-function DayView({ events, routineZones, onEventMove, onTaskDrop }: { events: CalendarEvent[]; routineZones: ReturnType<typeof getRoutineZones>; onEventMove?: (eventId: string, newHour: number) => void; onTaskDrop?: (taskId: string, hour: number) => void }) {
-  const [dragOverHour, setDragOverHour] = useState<number | null>(null);
-  const [draggingId, setDraggingId] = useState<string | null>(null);
+/** Convert a UTC ISO datetime to minutes from START_HOUR */
+function toGridMinutes(iso: string): number {
+  const d = new Date(iso);
+  return (d.getUTCHours() - START_HOUR) * 60 + d.getUTCMinutes();
+}
 
-  const mappedEvents = events.map(e => {
-    const startHour = new Date(e.start_time).getUTCHours();
-    const startMin = new Date(e.start_time).getUTCMinutes();
-    const durationHours = (new Date(e.end_time).getTime() - new Date(e.start_time).getTime()) / 3600000;
-    return { ...e, startHour, startMin, durationHours };
-  });
+/** Snap minutes to nearest 15-min slot */
+function snapTo15(min: number): number {
+  return Math.round(min / 15) * 15;
+}
+
+/** Check if a range [startMin, endMin) overlaps with any existing event except excludeId */
+function hasCollision(startMin: number, endMin: number, events: { startMin: number; endMin: number; id: string }[], excludeId?: string): boolean {
+  return events.some(e => e.id !== excludeId && startMin < e.endMin && endMin > e.startMin);
+}
+
+// ── Day view with 15-minute pixel grid + free drag ──
+function DayView({ events, routineZones, onEventMove, onTaskDrop }: {
+  events: CalendarEvent[];
+  routineZones: ReturnType<typeof getRoutineZones>;
+  onEventMove?: (eventId: string, newStartMin: number) => void;
+  onTaskDrop?: (taskId: string, startMin: number) => void;
+}) {
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [dragGhostMin, setDragGhostMin] = useState<number | null>(null);
+  const [dragGhostDuration, setDragGhostDuration] = useState<number>(30);
+  const [dragType, setDragType] = useState<"event" | "task" | null>(null);
+
+  const totalGridHeight = hours.length * HOUR_HEIGHT;
+
+  // Map events to grid positions
+  const gridEvents = useMemo(() => events.map(e => {
+    const startMin = toGridMinutes(e.start_time);
+    const endMin = toGridMinutes(e.end_time);
+    const durationMin = endMin - startMin;
+    return { ...e, startMin, endMin, durationMin };
+  }), [events]);
 
   const getZoneForHour = (hour: number) => routineZones.find(z => hour >= z.start && hour < z.end);
 
-  const handleDragStart = (e: React.DragEvent, eventId: string) => {
-    e.dataTransfer.setData("text/plain", eventId);
-    e.dataTransfer.setData("drag-type", "event");
-    e.dataTransfer.effectAllowed = "move";
-    setDraggingId(eventId);
-  };
+  /** Convert a mouse Y position to grid minutes */
+  const yToMinutes = useCallback((clientY: number): number => {
+    if (!gridRef.current) return 0;
+    const rect = gridRef.current.getBoundingClientRect();
+    const y = clientY - rect.top + gridRef.current.scrollTop;
+    const minutes = (y / HOUR_HEIGHT) * 60;
+    return snapTo15(Math.max(0, Math.min(minutes, (END_HOUR - START_HOUR) * 60 - 15)));
+  }, []);
 
-  const handleDrop = (e: React.DragEvent, hour: number) => {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    const dragType = e.dataTransfer.getData("drag-type");
+    e.dataTransfer.dropEffect = "move";
+    const min = yToMinutes(e.clientY);
+    setDragGhostMin(min);
+  }, [yToMinutes]);
+
+  const handleDragLeave = useCallback(() => {
+    setDragGhostMin(null);
+    setDragType(null);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const min = yToMinutes(e.clientY);
+    const type = e.dataTransfer.getData("drag-type");
     const id = e.dataTransfer.getData("text/plain");
-    if (dragType === "task" && id && onTaskDrop) {
-      onTaskDrop(id, hour);
-    } else if (id && onEventMove) {
-      onEventMove(id, hour);
+    const duration = parseInt(e.dataTransfer.getData("duration") || "30");
+
+    if (!id) { setDragGhostMin(null); return; }
+
+    // Collision check — only against other real events
+    const endMin = min + duration;
+    const collision = hasCollision(min, endMin, gridEvents, type === "event" ? id : undefined);
+
+    if (collision) {
+      toast.error("Créneau déjà occupé — déplacez vers un créneau libre");
+      setDragGhostMin(null);
+      setDragType(null);
+      return;
     }
-    setDragOverHour(null);
-    setDraggingId(null);
-  };
+
+    if (type === "task" && onTaskDrop) {
+      onTaskDrop(id, min);
+    } else if (type === "event" && onEventMove) {
+      onEventMove(id, min);
+    }
+    setDragGhostMin(null);
+    setDragType(null);
+  }, [yToMinutes, gridEvents, onEventMove, onTaskDrop]);
+
+  const handleEventDragStart = useCallback((e: React.DragEvent, event: typeof gridEvents[0]) => {
+    e.dataTransfer.setData("text/plain", event.id);
+    e.dataTransfer.setData("drag-type", "event");
+    e.dataTransfer.setData("duration", String(event.durationMin));
+    e.dataTransfer.effectAllowed = "move";
+    setDragGhostDuration(event.durationMin);
+    setDragType("event");
+  }, []);
 
   return (
-    <div className="card-soft overflow-hidden">
-      {hours.map((hour, idx) => {
-        const zone = getZoneForHour(hour);
-        const zoneStyle = zone ? ZONE_STYLES[zone.type] : null;
-        const isZoneStart = zone && hour === zone.start;
-        const isDropTarget = dragOverHour === hour;
-        return (
-          <motion.div
-            key={hour}
-            className={`flex border-b border-border/10 last:border-0 transition-colors`}
+    <div className="card-soft overflow-hidden relative">
+      <div
+        ref={gridRef}
+        className="relative"
+        style={{ height: `${totalGridHeight}px` }}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {/* Hour lines */}
+        {hours.map((hour, idx) => {
+          const zone = getZoneForHour(hour);
+          const zoneStyle = zone ? ZONE_STYLES[zone.type] : null;
+          const isZoneStart = zone && hour === zone.start;
+          const y = idx * HOUR_HEIGHT;
+          return (
+            <div
+              key={hour}
+              className="absolute left-0 right-0 border-b border-border/10"
+              style={{
+                top: `${y}px`,
+                height: `${HOUR_HEIGHT}px`,
+                backgroundColor: zoneStyle ? zoneStyle.bg : undefined,
+                borderLeftWidth: zoneStyle ? "3px" : undefined,
+                borderLeftColor: zoneStyle ? `${zoneStyle.border}40` : undefined,
+              }}
+            >
+              <div className="w-16 text-right pr-4 pt-1 text-xs text-muted-foreground font-semibold absolute left-0 top-0">
+                {hour}:00
+                {isZoneStart && (
+                  <div className="text-[9px] mt-0.5 font-medium" style={{ color: zoneStyle?.border || undefined, opacity: 0.7 }}>
+                    {zone.icon} {zone.label}
+                  </div>
+                )}
+              </div>
+              {/* 15-min sub-lines */}
+              <div className="absolute left-16 right-0 top-0 h-full">
+                <div className="absolute w-full border-b border-border/5" style={{ top: `${SLOT_HEIGHT}px` }} />
+                <div className="absolute w-full border-b border-border/8" style={{ top: `${SLOT_HEIGHT * 2}px` }} />
+                <div className="absolute w-full border-b border-border/5" style={{ top: `${SLOT_HEIGHT * 3}px` }} />
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Events */}
+        {gridEvents.map((event, i) => {
+          const topPx = (event.startMin / 60) * HOUR_HEIGHT;
+          const heightPx = Math.max((event.durationMin / 60) * HOUR_HEIGHT, 28);
+          return (
+            <div
+              key={event.id}
+              className="absolute z-10"
+              style={{ left: "68px", right: "8px", top: `${topPx}px`, height: `${heightPx}px` }}
+            >
+              <PlanningBlock
+                eventId={event.id}
+                title={event.title}
+                category={(event as any).category || "admin"}
+                durationHours={event.durationMin / 60}
+                source={event.source}
+                height={heightPx}
+                top={0}
+                index={i}
+                isDragging={false}
+                onDragStart={(e) => handleEventDragStart(e, event)}
+                onDragEnd={() => { setDragGhostMin(null); setDragType(null); }}
+              />
+            </div>
+          );
+        })}
+
+        {/* Drop ghost indicator */}
+        {dragGhostMin !== null && (
+          <div
+            className="absolute z-20 rounded-2xl border-2 border-dashed border-primary/40 bg-primary/8 flex items-center justify-center pointer-events-none transition-all duration-75"
             style={{
-              backgroundColor: isDropTarget
-                ? "rgba(138,99,246,0.08)"
-                : zoneStyle
-                ? zoneStyle.bg
-                : undefined,
-              borderLeftWidth: zoneStyle ? "3px" : undefined,
-              borderLeftColor: zoneStyle ? `${zoneStyle.border}40` : undefined,
+              left: "68px",
+              right: "8px",
+              top: `${(dragGhostMin / 60) * HOUR_HEIGHT}px`,
+              height: `${Math.max((dragGhostDuration / 60) * HOUR_HEIGHT, 28)}px`,
             }}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: idx * 0.015, duration: 0.25 }}
-            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDragOverHour(hour); }}
-            onDragLeave={() => setDragOverHour(null)}
-            onDrop={(e) => handleDrop(e, hour)}
           >
-            <div className="w-16 py-5 text-right pr-4 text-xs text-muted-foreground shrink-0 font-semibold">
-              {hour}:00
-              {isZoneStart && (
-                <div className="text-[9px] mt-0.5 font-medium" style={{ color: zoneStyle?.border || undefined, opacity: 0.7 }}>
-                  {zone.icon} {zone.label}
-                </div>
-              )}
-            </div>
-            <div className="flex-1 relative min-h-[68px] border-l border-border/15 py-0.5">
-              {mappedEvents.filter(e => e.startHour === hour).map((event, i) => (
-                <PlanningBlock
-                  key={event.id}
-                  eventId={event.id}
-                  title={event.title}
-                  category={(event as any).category || "admin"}
-                  durationHours={event.durationHours}
-                  source={event.source}
-                  height={Math.max(event.durationHours * 68, 44)}
-                  top={event.startMin}
-                  index={i}
-                  isDragging={draggingId === event.id}
-                  onDragStart={(e) => handleDragStart(e, event.id)}
-                  onDragEnd={() => { setDragOverHour(null); setDraggingId(null); }}
-                />
-              ))}
-              {isDropTarget && mappedEvents.filter(e => e.startHour === hour).length === 0 && (
-                <div className="absolute inset-2 rounded-2xl border-2 border-dashed border-primary/25 flex items-center justify-center">
-                  <p className="text-[10px] text-primary/40 font-medium">Déposer ici</p>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        );
-      })}
+            <p className="text-[11px] text-primary/60 font-medium">
+              {String(START_HOUR + Math.floor(dragGhostMin / 60)).padStart(2, "0")}:{String(dragGhostMin % 60).padStart(2, "0")} — Déposer ici
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -327,27 +406,29 @@ const GlobalPlanning = () => {
     }
   }, [todayAudit, auditLoading, auditSettings]);
 
-  const handleEventMove = useCallback((eventId: string, newHour: number) => {
+  const handleEventMove = useCallback((eventId: string, newStartMin: number) => {
     const event = events.find(e => e.id === eventId);
     if (!event) return;
     const oldStart = new Date(event.start_time);
     const oldEnd = new Date(event.end_time);
     const durationMs = oldEnd.getTime() - oldStart.getTime();
     const newStart = new Date(oldStart);
-    newStart.setUTCHours(newHour, 0, 0, 0);
+    newStart.setUTCHours(START_HOUR + Math.floor(newStartMin / 60), newStartMin % 60, 0, 0);
     const newEnd = new Date(newStart.getTime() + durationMs);
     updateEvent.mutate(
       { id: eventId, start_time: newStart.toISOString(), end_time: newEnd.toISOString() },
-      { onSuccess: () => toast.success("Événement déplacé !"), onError: () => toast.error("Erreur lors du déplacement") }
+      { onSuccess: () => toast.success(`Événement déplacé à ${String(START_HOUR + Math.floor(newStartMin / 60)).padStart(2, "0")}:${String(newStartMin % 60).padStart(2, "0")} !`), onError: () => toast.error("Erreur lors du déplacement") }
     );
   }, [events, updateEvent]);
 
-  const handleTaskDrop = useCallback(async (taskId: string, hour: number) => {
+  const handleTaskDrop = useCallback(async (taskId: string, startMin: number) => {
     const task = allTasks.find(t => t.id === taskId);
     if (!task) return;
     const targetDate = selectedDay || new Date();
     const startTime = new Date(targetDate);
-    startTime.setUTCHours(hour, 0, 0, 0);
+    const hour = START_HOUR + Math.floor(startMin / 60);
+    const minute = startMin % 60;
+    startTime.setUTCHours(hour, minute, 0, 0);
     const durationMin = task.estimated_duration || 30;
     const endTime = new Date(startTime.getTime() + durationMin * 60_000);
     const category = (task as any).category || "admin";
@@ -363,13 +444,10 @@ const GlobalPlanning = () => {
         color: null,
       });
       if (error) throw error;
-
-      // Mark the task as planned by setting due_date
       await supabase.from("tasks").update({ due_date: format(targetDate, "yyyy-MM-dd") }).eq("id", taskId);
-
       qc.invalidateQueries({ queryKey: ["calendar_events"] });
       qc.invalidateQueries({ queryKey: ["tasks"] });
-      toast.success(`"${task.action_label}" planifiée à ${hour}h00 !`);
+      toast.success(`"${task.action_label}" planifiée à ${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")} !`);
     } catch (e: any) {
       toast.error("Erreur lors de la planification");
     }
@@ -547,6 +625,7 @@ const GlobalPlanning = () => {
                         onDragStart={(e) => {
                           e.dataTransfer.setData("text/plain", task.id);
                           e.dataTransfer.setData("drag-type", "task");
+                          e.dataTransfer.setData("duration", String(task.estimated_duration || 30));
                           e.dataTransfer.effectAllowed = "copyMove";
                         }}
                         className="p-3 rounded-2xl border border-dashed transition-all cursor-grab active:cursor-grabbing hover:-translate-y-0.5 hover:shadow-md"
