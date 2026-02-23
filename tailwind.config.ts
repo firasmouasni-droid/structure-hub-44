@@ -16,12 +16,14 @@ export default {
       fontFamily: {
         sans: ["Inter", "sans-serif"],
       },
-      fontSize: {
-        "h1": ["1.75rem", { lineHeight: "2.25rem", fontWeight: "600" }],
-        "h2": ["1.375rem", { lineHeight: "1.875rem", fontWeight: "600" }],
-        "h3": ["1.125rem", { lineHeight: "1.625rem", fontWeight: "500" }],
-        "body": ["0.9375rem", { lineHeight: "1.5rem", fontWeight: "400" }],
-        "caption": ["0.8125rem", { lineHeight: "1.125rem", fontWeight: "400" }],
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 4px)",
+        sm: "calc(var(--radius) - 8px)",
+        xl: "1.375rem",
+        "2xl": "1.5rem",
+        "3xl": "1.75rem",
+        pill: "50px",
       },
       colors: {
         border: "hsl(var(--border))",
@@ -80,10 +82,10 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
       },
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+      boxShadow: {
+        soft: "0 10px 30px rgba(0, 0, 0, 0.06)",
+        "soft-lg": "0 14px 40px rgba(0, 0, 0, 0.09)",
+        "inner-soft": "inset 0 2px 4px rgba(0, 0, 0, 0.04)",
       },
       keyframes: {
         "accordion-down": {
@@ -95,19 +97,14 @@ export default {
           to: { height: "0" },
         },
         "fade-in": {
-          from: { opacity: "0" },
-          to: { opacity: "1" },
-        },
-        "slide-up": {
-          from: { transform: "translateY(4px)", opacity: "0" },
-          to: { transform: "translateY(0)", opacity: "1" },
+          from: { opacity: "0", transform: "translateY(8px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "fade-in": "fade-in 0.2s ease-out",
-        "slide-up": "slide-up 0.3s ease-out",
+        "fade-in": "fade-in 0.4s ease-out",
       },
     },
   },

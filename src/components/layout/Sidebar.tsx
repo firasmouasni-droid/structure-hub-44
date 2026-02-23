@@ -27,58 +27,59 @@ export const Sidebar = () => {
   const inboxCount = inboxTasks.length;
 
   return (
-    <aside className="w-60 h-screen bg-card border-r border-border flex flex-col">
-      <div className="px-5 py-4 border-b border-border">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground text-xs font-bold">SC</span>
+    <aside className="w-64 h-screen bg-white/90 backdrop-blur-sm border-r border-border/50 flex flex-col">
+      {/* Logo */}
+      <div className="px-5 py-5">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl gradient-primary flex items-center justify-center shadow-soft">
+            <span className="text-primary-foreground text-sm font-bold">SC</span>
           </div>
           <div>
-            <h1 className="text-sm font-semibold text-foreground tracking-tight">Second Cerveau</h1>
+            <h1 className="text-sm font-bold text-foreground">Second Cerveau</h1>
             <p className="text-[11px] text-muted-foreground">Productivity OS</p>
           </div>
         </div>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        <p className="px-3 py-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Navigation</p>
+      <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
+        <p className="px-3 py-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Menu</p>
         {mainNav.map((item) => {
           const isActive = location.pathname === item.path;
           const badge = item.path === "/inbox" && inboxCount > 0 ? inboxCount : null;
           return (
-            <Link key={item.path} to={item.path} className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${isActive ? "bg-accent text-foreground font-medium" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}>
-              <item.icon className="w-4 h-4" />
+            <Link key={item.path} to={item.path} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${isActive ? "gradient-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+              <item.icon className="w-[18px] h-[18px]" />
               <span>{item.label}</span>
               {badge && (
-                <span className="ml-auto text-[11px] font-medium text-muted-foreground bg-accent rounded px-1.5 py-0.5">{badge}</span>
+                <span className={`ml-auto text-[10px] font-bold pill w-5 h-5 flex items-center justify-center ${isActive ? "bg-white/25 text-primary-foreground" : "bg-primary/15 text-primary"}`}>{badge}</span>
               )}
             </Link>
           );
         })}
 
-        <p className="px-3 pt-6 pb-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Structures</p>
+        <p className="px-3 pt-5 pb-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Structures</p>
         {structures.map((item) => {
           const isActive = location.pathname === `/structure/${item.id}`;
           return (
-            <Link key={item.id} to={`/structure/${item.id}`} className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${isActive ? "bg-accent text-foreground font-medium" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}>
-              <div className={`w-2 h-2 rounded-full ${item.color}`} />
+            <Link key={item.id} to={`/structure/${item.id}`} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${isActive ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+              <div className={`w-3 h-3 rounded-full ${item.color}`} />
               <span>{item.name}</span>
             </Link>
           );
         })}
       </nav>
 
-      <div className="px-3 py-3 border-t border-border">
-        <Link to="/settings" className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
-          <Settings className="w-4 h-4" /><span>Paramètres</span>
+      <div className="p-4 border-t border-border/50">
+        <Link to="/settings" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all">
+          <Settings className="w-[18px] h-[18px]" /><span>Paramètres</span>
         </Link>
-        <div className="mt-3 px-3">
-          <div className="flex items-center justify-between text-[11px] mb-1.5">
-            <span className="font-medium text-foreground">Niveau {level}</span>
+        <div className="mt-4 px-2">
+          <div className="flex items-center justify-between text-[11px] mb-2">
+            <span className="font-semibold text-foreground">Niveau {level} ⭐</span>
             <span className="text-muted-foreground">{xp.toLocaleString()} XP</span>
           </div>
-          <div className="h-1 bg-accent rounded-full overflow-hidden">
-            <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${xpPercent}%` }} />
+          <div className="h-2 bg-muted rounded-pill overflow-hidden">
+            <div className="h-full gradient-primary rounded-pill transition-all duration-500" style={{ width: `${xpPercent}%` }} />
           </div>
         </div>
       </div>
