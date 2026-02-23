@@ -303,6 +303,42 @@ export type Database = {
           },
         ]
       }
+      life_spaces: {
+        Row: {
+          color: string
+          created_at: string
+          description: string | null
+          enabled: boolean
+          icon: string
+          id: string
+          key: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          icon?: string
+          id?: string
+          key: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          icon?: string
+          id?: string
+          key?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       routines: {
         Row: {
           afternoon_tasks: Json | null
@@ -369,6 +405,7 @@ export type Database = {
           description: string | null
           icon: string | null
           id: string
+          life_space_id: string | null
           name: string
           owner_id: string | null
         }
@@ -378,6 +415,7 @@ export type Database = {
           description?: string | null
           icon?: string | null
           id?: string
+          life_space_id?: string | null
           name: string
           owner_id?: string | null
         }
@@ -387,10 +425,19 @@ export type Database = {
           description?: string | null
           icon?: string | null
           id?: string
+          life_space_id?: string | null
           name?: string
           owner_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "structures_life_space_id_fkey"
+            columns: ["life_space_id"]
+            isOneToOne: false
+            referencedRelation: "life_spaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tasks: {
         Row: {
