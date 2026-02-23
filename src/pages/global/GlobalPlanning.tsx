@@ -1,4 +1,4 @@
-import { useCalendarEvents, useCalendarEventsRange, useUpdateCalendarEvent, useDeleteCalendarEvent, CalendarEvent } from "@/hooks/useCalendarEvents";
+import { useCalendarEvents, useCalendarEventsRange, useUpdateCalendarEvent, useUpdateCalendarEventDetails, useDeleteCalendarEvent, CalendarEvent } from "@/hooks/useCalendarEvents";
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { useRoutines } from "@/hooks/useRoutines";
 import { useWorkHoursSettings, useUpsertWorkHours, DEFAULT_WORK_HOURS, getWorkBlocks, parseTime } from "@/hooks/useWorkHours";
@@ -126,13 +126,14 @@ function hasCollision(startMin: number, endMin: number, events: { startMin: numb
 }
 
 // ── Day view with 15-minute pixel grid + free drag ──
-function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize, onEventDelete, workBlocks }: {
+function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize, onEventDelete, onEventUpdate, workBlocks }: {
   events: CalendarEvent[];
   routineZones: ReturnType<typeof getRoutineZones>;
   onEventMove?: (eventId: string, newStartMin: number) => void;
   onTaskDrop?: (taskId: string, startMin: number) => void;
   onEventResize?: (eventId: string, newEndMin: number) => void;
   onEventDelete?: (eventId: string) => void;
+  onEventUpdate?: (id: string, title: string, category: string) => void;
   workBlocks: WorkBlock[];
 }) {
   const gridRef = useRef<HTMLDivElement>(null);
@@ -140,7 +141,9 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize,
   const [dragGhostDuration, setDragGhostDuration] = useState<number>(30);
   const [dragType, setDragType] = useState<"event" | "task" | null>(null);
   const [resizing, setResizing] = useState<{ eventId: string; startMin: number; currentEndMin: number } | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [editingEvent, setEditingEvent] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editCategory, setEditCategory] = useState("");
 
   const totalGridHeight = hours.length * HOUR_HEIGHT;
 
@@ -313,7 +316,15 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize,
               key={event.id}
               className="absolute z-10"
               style={{ left: "68px", right: "8px", top: `${topPx}px`, height: `${heightPx}px` }}
-              onClick={(e) => { e.stopPropagation(); setDeleteConfirm(prev => prev === event.id ? null : event.id); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                const ev = gridEvents.find(ev => ev.id === event.id);
+                if (ev) {
+                  setEditingEvent(event.id);
+                  setEditTitle(ev.title);
+                  setEditCategory((ev as any).category || "admin");
+                }
+              }}
             >
               <PlanningBlock
                 eventId={event.id}
@@ -357,33 +368,59 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize,
         )}
       </div>
 
-      {/* Delete confirmation overlay */}
-      {deleteConfirm && (() => {
-        const ev = gridEvents.find(e => e.id === deleteConfirm);
+      {/* Edit/Delete event overlay */}
+      {editingEvent && (() => {
+        const ev = gridEvents.find(e => e.id === editingEvent);
         if (!ev) return null;
         return (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => setDeleteConfirm(null)}>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => setEditingEvent(null)}>
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-card border border-border/50 rounded-2xl shadow-xl p-5 max-w-sm w-full mx-4"
+              className="bg-card border border-border/50 rounded-2xl shadow-xl p-5 max-w-sm w-full mx-4 space-y-4"
               onClick={(e) => e.stopPropagation()}
             >
-              <p className="text-sm font-bold text-foreground mb-1">{ev.title}</p>
-              <p className="text-xs text-muted-foreground mb-4">Supprimer cet événement du planning ?</p>
-              <div className="flex items-center gap-3">
+              <div>
+                <label className="text-xs font-bold text-muted-foreground mb-1.5 block">Titre</label>
+                <input
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-muted-foreground mb-1.5 block">Catégorie</label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {CATEGORY_LIST.map(cat => (
+                    <button
+                      key={cat.key}
+                      onClick={() => setEditCategory(cat.key)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all border ${editCategory === cat.key ? "border-primary bg-primary/10 text-foreground shadow-sm" : "border-border/30 text-muted-foreground hover:bg-muted/50"}`}
+                    >
+                      <span>{cat.emoji}</span>
+                      <span className="truncate">{cat.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 pt-1">
                 <button
-                  onClick={() => { onEventDelete?.(ev.id); setDeleteConfirm(null); }}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-destructive text-destructive-foreground text-sm font-bold hover:bg-destructive/90 transition-colors"
+                  onClick={() => {
+                    if (editTitle.trim()) {
+                      onEventUpdate?.(ev.id, editTitle.trim(), editCategory);
+                    }
+                    setEditingEvent(null);
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-colors"
                 >
-                  <Trash2 className="w-4 h-4" />
-                  Supprimer
+                  <Edit3 className="w-4 h-4" />
+                  Enregistrer
                 </button>
                 <button
-                  onClick={() => setDeleteConfirm(null)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-muted text-muted-foreground text-sm font-bold hover:bg-muted/80 transition-colors"
+                  onClick={() => { onEventDelete?.(ev.id); setEditingEvent(null); }}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-destructive/10 text-destructive text-sm font-bold hover:bg-destructive/20 transition-colors"
                 >
-                  Annuler
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </motion.div>
@@ -628,6 +665,7 @@ const GlobalPlanning = () => {
   const updateTask = useUpdateTask();
   const updateEvent = useUpdateCalendarEvent();
   const deleteEvent = useDeleteCalendarEvent();
+  const updateEventDetails = useUpdateCalendarEventDetails();
 
   const routine = routines.find(r => !r.structure_id) || routines[0] || null;
   const routineZones = getRoutineZones(routine);
@@ -688,6 +726,14 @@ const GlobalPlanning = () => {
       onError: () => toast.error("Erreur lors de la suppression"),
     });
   }, [deleteEvent]);
+
+  const handleEventUpdate = useCallback((id: string, title: string, category: string) => {
+    updateEventDetails.mutate({ id, title, category }, {
+      onSuccess: () => toast.success("Événement modifié !"),
+      onError: () => toast.error("Erreur lors de la modification"),
+    });
+  }, [updateEventDetails]);
+
 
   const handleTaskDrop = useCallback(async (taskId: string, startMin: number) => {
     const task = allTasks.find(t => t.id === taskId);
@@ -1023,10 +1069,10 @@ const GlobalPlanning = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
            <FadeInSection className="lg:col-span-3">
              {selectedDay ? (
-              <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} onEventResize={handleEventResize} onEventDelete={handleEventDelete} workBlocks={workBlocks} />
+               <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} onEventResize={handleEventResize} onEventDelete={handleEventDelete} onEventUpdate={handleEventUpdate} workBlocks={workBlocks} />
             ) : (
               <>
-                {activeTab === "today" && <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} onEventResize={handleEventResize} onEventDelete={handleEventDelete} workBlocks={workBlocks} />}
+                {activeTab === "today" && <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} onEventResize={handleEventResize} onEventDelete={handleEventDelete} onEventUpdate={handleEventUpdate} workBlocks={workBlocks} />}
                 {activeTab === "week" && <WeekView events={events} weekStart={startOfWeek(currentDate, { weekStartsOn: 1 })} onDayClick={handleDayClick} />}
                 {activeTab === "month" && <MonthView events={events} currentDate={currentDate} onDayClick={handleDayClick} />}
               </>
