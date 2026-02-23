@@ -17,7 +17,7 @@ export function useRoutines() {
     queryKey: ["routines"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("routines" as any)
+        .from("routines")
         .select("*")
         .order("created_at");
       if (error) throw error;
@@ -31,7 +31,7 @@ export function useCreateRoutine() {
   return useMutation({
     mutationFn: async (routine: Partial<Routine>) => {
       const { data, error } = await supabase
-        .from("routines" as any)
+        .from("routines")
         .insert(routine as any)
         .select()
         .single();
@@ -47,7 +47,7 @@ export function useUpdateRoutine() {
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Routine> & { id: string }) => {
       const { data, error } = await supabase
-        .from("routines" as any)
+        .from("routines")
         .update(updates as any)
         .eq("id", id)
         .select()

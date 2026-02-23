@@ -40,3 +40,15 @@ export function useStructure(id: string) {
     enabled: !!id,
   });
 }
+
+export function useCreateStructure() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (structure: { name: string; color: string; description?: string }) => {
+      const { data, error } = await supabase.from("structures").insert(structure).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["structures"] }),
+  });
+}

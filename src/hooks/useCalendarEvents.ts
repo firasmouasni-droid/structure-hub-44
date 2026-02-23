@@ -7,6 +7,7 @@ export interface CalendarEvent {
   start_time: string;
   end_time: string;
   structure_id: string | null;
+  color: string | null;
   source: string;
   created_at: string;
 }
@@ -23,5 +24,21 @@ export function useCalendarEvents(date?: string) {
       if (error) throw error;
       return data as CalendarEvent[];
     },
+  });
+}
+
+export function useCalendarEventsByStructure(structureId: string, date?: string) {
+  return useQuery({
+    queryKey: ["calendar_events", structureId, date],
+    queryFn: async () => {
+      let query = supabase.from("calendar_events").select("*").eq("structure_id", structureId).order("start_time");
+      if (date) {
+        query = query.gte("start_time", `${date}T00:00:00`).lte("start_time", `${date}T23:59:59`);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return data as CalendarEvent[];
+    },
+    enabled: !!structureId,
   });
 }
