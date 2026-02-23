@@ -1,4 +1,3 @@
-import AppLayout from "@/components/layout/AppLayout";
 import { useTasks } from "@/hooks/useTasks";
 import { useStructures } from "@/hooks/useStructures";
 import { useGoals } from "@/hooks/useGoals";
@@ -52,8 +51,7 @@ const GlobalDashboard = () => {
   };
 
   return (
-    <AppLayout>
-      <PageTransition>
+    <PageTransition>
         <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
           {/* Header */}
           <motion.div className="gradient-header rounded-3xl p-6" initial={{ opacity: 0, y: -15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
@@ -255,8 +253,7 @@ const GlobalDashboard = () => {
             </StaggerContainer>
           </div>
         </div>
-      </PageTransition>
-    </AppLayout>
+    </PageTransition>
   );
 };
 

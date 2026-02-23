@@ -1,4 +1,3 @@
-import AppLayout from "@/components/layout/AppLayout";
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { useStructures } from "@/hooks/useStructures";
 import { useIncrementXP } from "@/hooks/useUserStats";
@@ -49,8 +48,7 @@ const GlobalInbox = () => {
   };
 
   return (
-    <AppLayout>
-      <PageTransition>
+    <PageTransition>
         <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
           <div className="flex items-center gap-3">
             <motion.div className="w-12 h-12 rounded-3xl gradient-warm flex items-center justify-center shadow-soft" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}>
@@ -112,8 +110,7 @@ const GlobalInbox = () => {
             </StaggerContainer>
           </AnimatePresence>
         </div>
-      </PageTransition>
-    </AppLayout>
+    </PageTransition>
   );
 };
 

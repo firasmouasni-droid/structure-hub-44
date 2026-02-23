@@ -1,4 +1,3 @@
-import StructureLayout from "@/components/layout/StructureLayout";
 import { useTasksByStructure, useCreateTask, useUpdateTask } from "@/hooks/useTasks";
 import { useStructure } from "@/hooks/useStructures";
 import { useIncrementXP } from "@/hooks/useUserStats";
@@ -62,8 +61,7 @@ const StructureTasks = () => {
   const progressPct = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
 
   return (
-    <StructureLayout>
-      <PageTransition>
+    <PageTransition>
         <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
           <div className="flex items-center justify-between">
             <div>
@@ -158,8 +156,7 @@ const StructureTasks = () => {
             ))}
           </StaggerContainer>
         </div>
-      </PageTransition>
-    </StructureLayout>
+    </PageTransition>
   );
 };
 

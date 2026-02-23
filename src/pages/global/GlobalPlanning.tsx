@@ -1,4 +1,3 @@
-import AppLayout from "@/components/layout/AppLayout";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { CalendarDays, Sparkles, Loader2 } from "lucide-react";
@@ -52,8 +51,7 @@ const GlobalPlanning = () => {
   const totalPlanned = mappedEvents.reduce((sum, e) => sum + e.durationHours, 0);
 
   return (
-    <AppLayout>
-      <PageTransition>
+    <PageTransition>
         <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -126,8 +124,7 @@ const GlobalPlanning = () => {
             </StaggerContainer>
           </div>
         </div>
-      </PageTransition>
-    </AppLayout>
+    </PageTransition>
   );
 };
 

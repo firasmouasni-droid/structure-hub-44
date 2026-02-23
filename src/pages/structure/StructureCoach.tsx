@@ -1,4 +1,3 @@
-import StructureLayout from "@/components/layout/StructureLayout";
 import { Bot, Send, CheckSquare, Calendar, TrendingUp, Sparkles } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
@@ -120,8 +119,7 @@ const StructureCoach = () => {
   ];
 
   return (
-    <StructureLayout>
-      <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full">
         <motion.div className="border-b border-border/30 bg-card/80 backdrop-blur-sm px-6 py-4" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
           <div className="flex items-center gap-3 max-w-4xl mx-auto">
             <motion.div className="w-12 h-12 rounded-3xl gradient-warm flex items-center justify-center shadow-soft" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.1 }}>
@@ -179,8 +177,7 @@ const StructureCoach = () => {
             </motion.button>
           </div>
         </motion.div>
-      </div>
-    </StructureLayout>
+    </div>
   );
 };
 

@@ -1,4 +1,3 @@
-import AppLayout from "@/components/layout/AppLayout";
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { useStructures } from "@/hooks/useStructures";
 import { useIncrementXP } from "@/hooks/useUserStats";
@@ -40,8 +39,7 @@ const GlobalTasks = () => {
   };
 
   return (
-    <AppLayout>
-      <PageTransition>
+    <PageTransition>
         <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
           <h1 className="text-2xl font-bold text-foreground">Toutes les tâches</h1>
 
@@ -90,8 +88,7 @@ const GlobalTasks = () => {
             })}
           </StaggerContainer>
         </div>
-      </PageTransition>
-    </AppLayout>
+    </PageTransition>
   );
 };
 

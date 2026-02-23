@@ -1,4 +1,3 @@
-import StructureLayout from "@/components/layout/StructureLayout";
 import { useRoutines, useCreateRoutine, useUpdateRoutine } from "@/hooks/useRoutines";
 import { useParams } from "react-router-dom";
 import { Clock, Sun, Coffee, Mail, Save } from "lucide-react";
@@ -60,8 +59,7 @@ const StructureRoutines = () => {
   };
 
   return (
-    <StructureLayout>
-      <PageTransition>
+    <PageTransition>
         <div className="p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
           <div className="flex items-center gap-3">
             <motion.div className="w-12 h-12 rounded-3xl bg-warning/15 flex items-center justify-center shadow-soft" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}>
@@ -165,8 +163,7 @@ const StructureRoutines = () => {
             <Save className="w-4 h-4" /> Sauvegarder les routines
           </motion.button>
         </div>
-      </PageTransition>
-    </StructureLayout>
+    </PageTransition>
   );
 };
 

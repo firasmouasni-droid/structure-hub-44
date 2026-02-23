@@ -1,4 +1,3 @@
-import StructureLayout from "@/components/layout/StructureLayout";
 import { useConnectors, useCreateConnector, useUpdateConnector } from "@/hooks/useConnectors";
 import { useParams } from "react-router-dom";
 import { Mail, Calendar, Briefcase, Webhook, ToggleLeft, ToggleRight, Wifi, WifiOff, Plus } from "lucide-react";
@@ -105,8 +104,7 @@ const StructureSources = () => {
   );
 
   return (
-    <StructureLayout>
-      <PageTransition>
+    <PageTransition>
         <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
           <div className="flex items-center gap-3">
             <motion.div className="w-12 h-12 rounded-3xl bg-accent/15 flex items-center justify-center shadow-soft" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}>
@@ -124,8 +122,7 @@ const StructureSources = () => {
             <StaggerItem>{renderCategory("Outils de travail", <Briefcase className="w-5 h-5 text-primary" />, TOOL_SOURCES)}</StaggerItem>
           </StaggerContainer>
         </div>
-      </PageTransition>
-    </StructureLayout>
+    </PageTransition>
   );
 };
 
