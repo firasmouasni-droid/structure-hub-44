@@ -3,6 +3,7 @@ import { useStructures } from "@/hooks/useStructures";
 import { useIncrementXP } from "@/hooks/useUserStats";
 import { Search, Brain, Scissors, AlertTriangle } from "lucide-react";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/motion/MotionWrappers";
@@ -24,6 +25,7 @@ const GlobalTasks = () => {
   const updateTask = useUpdateTask();
   const incrementXP = useIncrementXP();
   const wip = useWIPStatus();
+  const qc = useQueryClient();
 
   const [activeTab, setActiveTab] = useState("all");
   const [search, setSearch] = useState("");
@@ -80,6 +82,7 @@ const GlobalTasks = () => {
         ? `Tâche découpée en ${data.subtasks_created} sous-tâches 🧩`
         : "Tâche reformulée par l'IA ✨";
       toast.success(msg);
+      qc.invalidateQueries({ queryKey: ["tasks"] });
     } catch (err: any) {
       toast.error(err.message || "Erreur de refinement");
     }
