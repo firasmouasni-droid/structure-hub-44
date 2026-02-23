@@ -1,7 +1,7 @@
 import { Link, useLocation, useParams } from "react-router-dom";
 import {
   LayoutDashboard, Inbox, CheckSquare, Calendar, Bot, Settings, Target, Clock,
-  ChevronDown, ChevronRight, BarChart3, Trophy, Lock, Brain, Home,
+  ChevronDown, ChevronRight, BarChart3, Trophy, Lock, Brain, Home, Plus,
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { useStructures } from "@/hooks/useStructures";
@@ -11,8 +11,7 @@ import { useLifeSpaces } from "@/hooks/useLifeSpaces";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
-/** Liens transverses du QG Général — vues globales tous espaces */
-const globalNav = [
+const workSubNav = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/global/dashboard" },
   { label: "Tâches", icon: CheckSquare, path: "/global/tasks" },
   { label: "Inbox IA", icon: Inbox, path: "/global/inbox" },
@@ -45,12 +44,12 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
     return acc;
   }, {});
 
-  const isOnGlobalRoute = location.pathname.startsWith("/global/");
+  // Work space is open by default when on a /global/* or /structures/* or /spaces/work route
   const isOnWorkRoute =
+    location.pathname.startsWith("/global/") ||
     location.pathname.startsWith("/structures/") ||
     location.pathname.startsWith("/spaces/work");
 
-  const [globalOpen, setGlobalOpen] = useState(isOnGlobalRoute);
   const [workOpen, setWorkOpen] = useState(isOnWorkRoute);
 
   const level = stats?.level ?? 1;
@@ -98,29 +97,40 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
           <span>Accueil</span>
         </Link>
 
-        {/* ── QG GÉNÉRAL (vues transverses) ── */}
+        {/* ── ESPACES DE VIE ── */}
+        <p className="px-3 pt-4 pb-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+          Espaces de vie
+        </p>
+
+        {/* ── TRAVAIL (bloc déroulant) ── */}
         <div>
           <button
-            onClick={() => setGlobalOpen((v) => !v)}
+            onClick={() => setWorkOpen((v) => !v)}
             className={cn(
               "w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm font-medium transition-all duration-200",
-              isOnGlobalRoute
+              isOnWorkRoute
                 ? "bg-primary/10 text-primary"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
           >
-            <Brain className="w-[18px] h-[18px] flex-shrink-0" />
-            <span className="flex-1 text-left">QG Général</span>
-            {globalOpen ? (
+            <span className="w-[22px] h-[22px] rounded-lg flex items-center justify-center text-xs flex-shrink-0">
+              {workSpace?.icon ?? "💼"}
+            </span>
+            <span className="flex-1 text-left">{workSpace?.label ?? "Travail"}</span>
+            {workOpen ? (
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             ) : (
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             )}
           </button>
 
-          {globalOpen && (
+          {workOpen && (
             <div className="ml-4 mt-1 space-y-0.5 border-l-2 border-border/50 pl-3">
-              {globalNav.map((item) => {
+              {/* Sub-group: Vue Travail globale */}
+              <p className="px-2 pt-2 pb-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                Vue globale
+              </p>
+              {workSubNav.map((item) => {
                 const isActive = location.pathname === item.path;
                 const badge = item.path === "/global/inbox" && inboxCount > 0 ? inboxCount : null;
                 return (
@@ -145,55 +155,8 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                   </Link>
                 );
               })}
-            </div>
-          )}
-        </div>
 
-        {/* ── ESPACES DE VIE ── */}
-        <p className="px-3 pt-4 pb-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-          Espaces de vie
-        </p>
-
-        {/* ── TRAVAIL (espace de vie + structures) ── */}
-        <div>
-          <button
-            onClick={() => setWorkOpen((v) => !v)}
-            className={cn(
-              "w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm font-medium transition-all duration-200",
-              isOnWorkRoute
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )}
-          >
-            <span className="w-[22px] h-[22px] rounded-lg flex items-center justify-center text-xs flex-shrink-0">
-              {workSpace?.icon ?? "💼"}
-            </span>
-            <span className="flex-1 text-left">{workSpace?.label ?? "Travail"}</span>
-            {workOpen ? (
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            )}
-          </button>
-
-          {workOpen && (
-            <div className="ml-4 mt-1 space-y-0.5 border-l-2 border-border/50 pl-3">
-              {/* Link to the Work space hub */}
-              <Link
-                to="/spaces/work"
-                onClick={onNavigate}
-                className={cn(
-                  "flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-200",
-                  location.pathname === "/spaces/work"
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                <LayoutDashboard className="w-[15px] h-[15px]" />
-                <span>QG Travail</span>
-              </Link>
-
-              {/* Structures under Work */}
+              {/* Sub-group: Structures Travail */}
               {workStructures.length > 0 && (
                 <>
                   <p className="px-2 pt-3 pb-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
