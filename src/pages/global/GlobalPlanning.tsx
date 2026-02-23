@@ -27,6 +27,51 @@ const TABS = [
   { key: "month", label: "Mois" },
 ];
 
+// ── Work hours configuration ──
+const WORK_BLOCKS = [
+  { startHour: 9, startMin: 0, endHour: 12, endMin: 0 },  // Morning
+  { startHour: 13, startMin: 0, endHour: 18, endMin: 0 },  // Afternoon
+];
+
+/** Convert work block to absolute minutes from START_HOUR */
+function workBlockToMinutes(block: typeof WORK_BLOCKS[0]) {
+  return {
+    start: (block.startHour - START_HOUR) * 60 + block.startMin,
+    end: (block.endHour - START_HOUR) * 60 + block.endMin,
+  };
+}
+
+/** Check if a range [startMin, endMin) fits entirely within work hours */
+function isWithinWorkHours(startMin: number, endMin: number): boolean {
+  return WORK_BLOCKS.some(block => {
+    const b = workBlockToMinutes(block);
+    return startMin >= b.start && endMin <= b.end;
+  });
+}
+
+/** Check if a time slot is completely free (no collision AND within work hours) */
+function isTimeSlotFree(
+  startMin: number,
+  endMin: number,
+  events: { startMin: number; endMin: number; id: string }[],
+  excludeId?: string
+): { free: boolean; reason?: string } {
+  if (!isWithinWorkHours(startMin, endMin)) {
+    const absStartH = START_HOUR + Math.floor(startMin / 60);
+    const absStartM = startMin % 60;
+    const absEndH = START_HOUR + Math.floor(endMin / 60);
+    const absEndM = endMin % 60;
+    return {
+      free: false,
+      reason: `Hors horaires de travail (${String(absStartH).padStart(2, "0")}:${String(absStartM).padStart(2, "0")} – ${String(absEndH).padStart(2, "0")}:${String(absEndM).padStart(2, "0")}). Plages autorisées : ${WORK_BLOCKS.map(b => `${String(b.startHour).padStart(2, "0")}:${String(b.startMin).padStart(2, "0")}–${String(b.endHour).padStart(2, "0")}:${String(b.endMin).padStart(2, "0")}`).join(", ")}`,
+    };
+  }
+  if (hasCollision(startMin, endMin, events, excludeId)) {
+    return { free: false, reason: "Créneau déjà occupé par un autre événement" };
+  }
+  return { free: true };
+}
+
 function getRoutineZones(routine: any) {
   if (!routine) return [];
   const zones: { start: number; end: number; label: string; type: string; icon: string }[] = [];
@@ -49,6 +94,11 @@ function getRoutineZones(routine: any) {
   if (af?.start && af?.end) zones.push({ start: parseInt(af.start.split(":")[0]), end: parseInt(af.end.split(":")[0]), label: af.focus === "meetings_admin" ? "Meetings & Admin" : "Admin", type: "admin", icon: "☕" });
   if (Array.isArray(es)) for (const slot of es) { const h = parseInt(slot.split(":")[0]); zones.push({ start: h, end: h + 1, label: "Emails", type: "email", icon: "📧" }); }
   return zones;
+}
+
+/** Check if a given hour is within any work block */
+function isHourInWorkBlock(hour: number): boolean {
+  return WORK_BLOCKS.some(b => hour >= b.startHour && hour < b.endHour);
 }
 
 const ZONE_STYLES: Record<string, { bg: string; border: string }> = {
@@ -130,12 +180,11 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop }: {
 
     if (!id) { setDragGhostMin(null); return; }
 
-    // Collision check — only against other real events
     const endMin = min + duration;
-    const collision = hasCollision(min, endMin, gridEvents, type === "event" ? id : undefined);
+    const check = isTimeSlotFree(min, endMin, gridEvents, type === "event" ? id : undefined);
 
-    if (collision) {
-      toast.error("Créneau déjà occupé — déplacez vers un créneau libre");
+    if (!check.free) {
+      toast.error(check.reason || "Créneau indisponible");
       setDragGhostMin(null);
       setDragType(null);
       return;
@@ -174,6 +223,7 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop }: {
           const zone = getZoneForHour(hour);
           const zoneStyle = zone ? ZONE_STYLES[zone.type] : null;
           const isZoneStart = zone && hour === zone.start;
+          const inWorkHours = isHourInWorkBlock(hour);
           const y = idx * HOUR_HEIGHT;
           return (
             <div
@@ -182,9 +232,10 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop }: {
               style={{
                 top: `${y}px`,
                 height: `${HOUR_HEIGHT}px`,
-                backgroundColor: zoneStyle ? zoneStyle.bg : undefined,
+                backgroundColor: !inWorkHours ? 'hsl(var(--muted) / 0.3)' : zoneStyle ? zoneStyle.bg : undefined,
                 borderLeftWidth: zoneStyle ? "3px" : undefined,
                 borderLeftColor: zoneStyle ? `${zoneStyle.border}40` : undefined,
+                opacity: !inWorkHours ? 0.5 : 1,
               }}
             >
               <div className="w-16 text-right pr-4 pt-1 text-xs text-muted-foreground font-semibold absolute left-0 top-0">
@@ -192,6 +243,11 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop }: {
                 {isZoneStart && (
                   <div className="text-[9px] mt-0.5 font-medium" style={{ color: zoneStyle?.border || undefined, opacity: 0.7 }}>
                     {zone.icon} {zone.label}
+                  </div>
+                )}
+                {!inWorkHours && (
+                  <div className="text-[9px] mt-0.5 font-medium text-muted-foreground/50">
+                    Hors horaires
                   </div>
                 )}
               </div>
@@ -357,7 +413,18 @@ const TIME_SLOTS = (() => {
   const slots: { hour: number; minute: number; label: string }[] = [];
   for (let h = 7; h <= 20; h++) {
     for (const m of [0, 15, 30, 45]) {
-      slots.push({ hour: h, minute: m, label: `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}` });
+      // Only include slots that fall within work hours
+      if (isHourInWorkBlock(h)) {
+        // Check the slot doesn't go past the work block end
+        const slotEndMin = h * 60 + m + 15;
+        const inBlock = WORK_BLOCKS.some(b => {
+          const bEnd = b.endHour * 60 + b.endMin;
+          return h * 60 + m >= b.startHour * 60 + b.startMin && slotEndMin <= bEnd;
+        });
+        if (inBlock) {
+          slots.push({ hour: h, minute: m, label: `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}` });
+        }
+      }
     }
   }
   return slots;
@@ -697,7 +764,18 @@ const GlobalPlanning = () => {
                         task={task}
                         cat={cat}
                         CatIcon={CatIcon}
-                        onSchedule={(hour, minute) => handleTaskDrop(task.id, (hour - START_HOUR) * 60 + minute)}
+                        onSchedule={(hour, minute) => {
+                          const startMin = (hour - START_HOUR) * 60 + minute;
+                          const duration = task.estimated_duration || 30;
+                          const endMin = startMin + duration;
+                          // We need gridEvents but don't have them here — delegate to handleTaskDrop which will create the event
+                          // Validate work hours at least
+                          if (!isWithinWorkHours(startMin, endMin)) {
+                            toast.error(`Hors horaires de travail. Plages : ${WORK_BLOCKS.map(b => `${String(b.startHour).padStart(2, "0")}:${String(b.startMin).padStart(2, "0")}–${String(b.endHour).padStart(2, "0")}:${String(b.endMin).padStart(2, "0")}`).join(", ")}`);
+                            return;
+                          }
+                          handleTaskDrop(task.id, startMin);
+                        }}
                         onDragStart={(e) => {
                           e.dataTransfer.setData("text/plain", task.id);
                           e.dataTransfer.setData("drag-type", "task");
