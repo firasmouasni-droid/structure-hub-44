@@ -151,6 +151,7 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize,
   const [createTitle, setCreateTitle] = useState("");
   const [createCategory, setCreateCategory] = useState<string>("admin");
   const [createDuration, setCreateDuration] = useState(30);
+  const [hoverMin, setHoverMin] = useState<number | null>(null);
 
   const totalGridHeight = hours.length * HOUR_HEIGHT;
 
@@ -262,13 +263,23 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize,
     <div className="card-soft overflow-hidden relative">
       <div
         ref={gridRef}
-        className="relative cursor-pointer"
+        className="relative"
         style={{ height: `${totalGridHeight}px` }}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        onMouseMove={(e) => {
+          if (dragGhostMin !== null || resizing || creating || editingEvent) { setHoverMin(null); return; }
+          const target = e.target as HTMLElement;
+          if (target === gridRef.current || target.closest('[data-grid-bg]')) {
+            setHoverMin(snapTo15(yToMinutes(e.clientY)));
+          } else {
+            setHoverMin(null);
+          }
+        }}
+        onMouseLeave={() => setHoverMin(null)}
         onClick={(e) => {
-          // Only trigger if clicking directly on the grid background (not on an event)
+          setHoverMin(null);
           if (e.target === gridRef.current || (e.target as HTMLElement).closest('[data-grid-bg]')) {
             const min = yToMinutes(e.clientY);
             setCreating({ startMin: min });
@@ -369,6 +380,23 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize,
             </div>
           );
         })}
+
+        {/* Hover preview indicator */}
+        {hoverMin !== null && (
+          <div
+            className="absolute z-5 rounded-2xl border-2 border-dashed border-primary/25 bg-primary/5 flex items-center justify-center pointer-events-none transition-all duration-100"
+            style={{
+              left: "68px",
+              right: "8px",
+              top: `${(hoverMin / 60) * HOUR_HEIGHT}px`,
+              height: `${(30 / 60) * HOUR_HEIGHT}px`,
+            }}
+          >
+            <p className="text-[11px] text-primary/40 font-medium">
+              + {String(START_HOUR + Math.floor(hoverMin / 60)).padStart(2, "0")}:{String(hoverMin % 60).padStart(2, "0")}
+            </p>
+          </div>
+        )}
 
         {/* Drop ghost indicator */}
         {dragGhostMin !== null && (
