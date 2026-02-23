@@ -1,0 +1,134 @@
+import AppLayout from "@/components/layout/AppLayout";
+import { useCalendarEvents } from "@/hooks/useCalendarEvents";
+import { useTasks, useUpdateTask } from "@/hooks/useTasks";
+import { CalendarDays, Sparkles, Loader2 } from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { useState } from "react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { PageTransition, StaggerContainer, StaggerItem, HoverCard, FadeInSection } from "@/components/motion/MotionWrappers";
+import { motion } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
+
+const hours = Array.from({ length: 14 }, (_, i) => i + 7);
+const TABS = [
+  { key: "today", label: "Aujourd'hui" },
+  { key: "week", label: "Semaine" },
+  { key: "month", label: "Mois" },
+];
+
+const GlobalPlanning = () => {
+  const today = new Date().toISOString().split("T")[0];
+  const { data: events = [] } = useCalendarEvents(today);
+  const { data: allTasks = [] } = useTasks();
+  const updateTask = useUpdateTask();
+  const [activeTab, setActiveTab] = useState("today");
+  const [autoplanning, setAutoplanning] = useState(false);
+  const qc = useQueryClient();
+
+  const unplannedTasks = allTasks.filter(t => !t.due_date && t.status !== "done" && !t.is_inbox);
+
+  const handleAutoplan = async () => {
+    setAutoplanning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("autoplan", { body: {} });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`${data.planned} tâches planifiées par l'IA ! 🤖`);
+      qc.invalidateQueries({ queryKey: ["calendar_events"] });
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+    } catch (e: any) { toast.error(e.message || "Erreur d'auto-planification"); }
+    setAutoplanning(false);
+  };
+
+  const mappedEvents = events.map(e => {
+    const startHour = new Date(e.start_time).getHours();
+    const startMin = new Date(e.start_time).getMinutes();
+    const durationHours = (new Date(e.end_time).getTime() - new Date(e.start_time).getTime()) / 3600000;
+    return { ...e, startHour, startMin, durationHours };
+  });
+
+  const totalPlanned = mappedEvents.reduce((sum, e) => sum + e.durationHours, 0);
+
+  return (
+    <AppLayout>
+      <PageTransition>
+        <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <motion.div className="w-12 h-12 rounded-3xl bg-accent/15 flex items-center justify-center" initial={{ scale: 0, rotate: -180 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}>
+                <CalendarDays className="w-6 h-6 text-accent" />
+              </motion.div>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Planning global</h1>
+                <p className="text-sm text-muted-foreground capitalize">{format(new Date(), "EEEE d MMMM", { locale: fr })}</p>
+              </div>
+            </div>
+            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={handleAutoplan} disabled={autoplanning} className="flex items-center gap-2 px-5 py-2.5 rounded-2xl gradient-primary text-primary-foreground text-sm font-bold shadow-soft disabled:opacity-70">
+              {autoplanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              {autoplanning ? "Planification..." : "Auto-planifier via IA"}
+            </motion.button>
+          </div>
+
+          <div className="flex items-center gap-1 p-1 bg-card/70 backdrop-blur-sm rounded-2xl shadow-soft w-fit">
+            {TABS.map(tab => (
+              <motion.button key={tab.key} onClick={() => setActiveTab(tab.key)} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className={`px-5 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === tab.key ? "gradient-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:text-foreground"}`}>
+                {tab.label}
+              </motion.button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <FadeInSection className="lg:col-span-3">
+              <div className="card-soft overflow-hidden">
+                {hours.map((hour, idx) => (
+                  <motion.div key={hour} className="flex border-b border-border/20 last:border-0" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.02, duration: 0.3 }}>
+                    <div className="w-16 py-5 text-right pr-4 text-xs text-muted-foreground shrink-0 font-semibold">{hour}:00</div>
+                    <div className="flex-1 relative min-h-[64px] border-l border-border/20">
+                      {mappedEvents.filter(e => e.startHour === hour).map((event, i) => (
+                        <motion.div key={i} className="absolute left-2 right-2 rounded-2xl px-4 py-2.5 border bg-primary/12 border-primary/20 text-primary" style={{ height: `${Math.max(event.durationHours * 64, 40)}px`, top: `${event.startMin}px` }} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 + i * 0.1 }}>
+                          <p className="text-xs font-bold truncate">{event.title}</p>
+                          <p className="text-[11px] opacity-70">{event.durationHours.toFixed(1)}h</p>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </FadeInSection>
+
+            <StaggerContainer className="space-y-5" delay={0.2}>
+              <StaggerItem>
+                <div className="card-soft p-5">
+                  <h2 className="text-sm font-bold text-foreground mb-3">À planifier</h2>
+                  <div className="space-y-2">
+                    {unplannedTasks.length === 0 && <p className="text-xs text-muted-foreground">Tout est planifié 🎉</p>}
+                    {unplannedTasks.slice(0, 6).map(task => (
+                      <HoverCard key={task.id} className="p-3 rounded-2xl border border-dashed border-border hover:border-primary/30 transition-all">
+                        <p className="text-sm font-medium text-foreground">{task.action_label}</p>
+                        <span className={`pill text-[10px] font-bold px-2 py-0.5 mt-1 inline-block ${task.priority === "high" ? "bg-destructive/20 text-destructive-foreground" : "bg-muted text-muted-foreground"}`}>{task.priority}</span>
+                      </HoverCard>
+                    ))}
+                  </div>
+                </div>
+              </StaggerItem>
+              <StaggerItem>
+                <div className="card-soft p-5">
+                  <h2 className="text-sm font-bold text-foreground mb-3">Résumé</h2>
+                  <div className="space-y-2.5 text-xs">
+                    <div className="flex justify-between"><span className="text-muted-foreground">Total planifié</span><span className="font-bold text-foreground">{totalPlanned.toFixed(1)}h</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Événements</span><span className="font-bold text-foreground">{mappedEvents.length}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Non planifiées</span><span className="font-bold text-foreground">{unplannedTasks.length}</span></div>
+                  </div>
+                </div>
+              </StaggerItem>
+            </StaggerContainer>
+          </div>
+        </div>
+      </PageTransition>
+    </AppLayout>
+  );
+};
+
+export default GlobalPlanning;
