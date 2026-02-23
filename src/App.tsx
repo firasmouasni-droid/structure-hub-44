@@ -9,6 +9,7 @@ import Tasks from "./pages/Tasks";
 import InboxIA from "./pages/InboxIA";
 import Planning from "./pages/Planning";
 import CoachIA from "./pages/CoachIA";
+import ConnectorsPage from "./pages/ConnectorsPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/inbox" element={<InboxIA />} />
           <Route path="/planning" element={<Planning />} />
           <Route path="/coach" element={<CoachIA />} />
+          <Route path="/connectors" element={<ConnectorsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

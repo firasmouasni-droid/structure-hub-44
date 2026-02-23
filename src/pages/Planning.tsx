@@ -2,13 +2,15 @@ import AppLayout from "@/components/layout/AppLayout";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { useStructures } from "@/hooks/useStructures";
-import { CalendarDays, Sparkles } from "lucide-react";
+import { CalendarDays, Sparkles, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useState } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard, FadeInSection } from "@/components/motion/MotionWrappers";
 import { motion } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
 
 const hours = Array.from({ length: 12 }, (_, i) => i + 7);
 
@@ -18,12 +20,6 @@ const TABS = [
   { key: "month", label: "Mois" },
 ];
 
-const typeStyles: Record<string, string> = {
-  deep: "bg-primary/12 border-primary/20 text-primary",
-  meeting: "bg-accent/12 border-accent/20 text-accent",
-  admin: "bg-warning/12 border-warning/20 text-warning-foreground",
-};
-
 const Planning = () => {
   const today = new Date().toISOString().split("T")[0];
   const { data: events = [] } = useCalendarEvents(today);
@@ -31,12 +27,29 @@ const Planning = () => {
   const { data: structures = [] } = useStructures();
   const updateTask = useUpdateTask();
   const [activeTab, setActiveTab] = useState("today");
+  const [autoplanning, setAutoplanning] = useState(false);
+  const qc = useQueryClient();
 
   const unplannedTasks = allTasks.filter(t => !t.due_date && t.status !== "done");
 
   const handlePlanToday = async (taskId: string) => {
     await updateTask.mutateAsync({ id: taskId, due_date: today });
     toast.success("Tâche planifiée aujourd'hui !");
+  };
+
+  const handleAutoplan = async () => {
+    setAutoplanning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("autoplan", {});
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`${data.planned} tâches planifiées par l'IA ! 🤖`);
+      qc.invalidateQueries({ queryKey: ["calendar_events"] });
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+    } catch (e: any) {
+      toast.error(e.message || "Erreur d'auto-planification");
+    }
+    setAutoplanning(false);
   };
 
   const mappedEvents = events.map(e => {
@@ -56,15 +69,9 @@ const Planning = () => {
     <AppLayout>
       <PageTransition>
         <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
-          {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <motion.div
-                className="w-12 h-12 rounded-3xl bg-accent/15 flex items-center justify-center"
-                initial={{ scale: 0, rotate: -180 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: "spring", stiffness: 260, damping: 20 }}
-              >
+              <motion.div className="w-12 h-12 rounded-3xl bg-accent/15 flex items-center justify-center" initial={{ scale: 0, rotate: -180 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}>
                 <CalendarDays className="w-6 h-6 text-accent" />
               </motion.div>
               <div>
@@ -75,58 +82,37 @@ const Planning = () => {
             <motion.button
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl gradient-primary text-primary-foreground text-sm font-bold shadow-soft hover:shadow-soft-lg transition-all"
+              onClick={handleAutoplan}
+              disabled={autoplanning}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl gradient-primary text-primary-foreground text-sm font-bold shadow-soft hover:shadow-soft-lg transition-all disabled:opacity-70"
             >
-              <Sparkles className="w-4 h-4" />
-              Auto-planifier via IA
+              {autoplanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              {autoplanning ? "Planification..." : "Auto-planifier via IA"}
             </motion.button>
           </div>
 
-          {/* Tabs */}
           <div className="flex items-center gap-1 p-1 bg-card/70 backdrop-blur-sm rounded-2xl shadow-soft w-fit">
             {TABS.map(tab => (
-              <motion.button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                className={`px-5 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${activeTab === tab.key ? "gradient-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:text-foreground"}`}
-              >
+              <motion.button key={tab.key} onClick={() => setActiveTab(tab.key)} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className={`px-5 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${activeTab === tab.key ? "gradient-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:text-foreground"}`}>
                 {tab.label}
               </motion.button>
             ))}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Timeline */}
             <FadeInSection className="lg:col-span-3">
               <div className="card-soft overflow-hidden">
                 <div className="relative">
                   {hours.map((hour, idx) => (
-                    <motion.div
-                      key={hour}
-                      className="flex border-b border-border/20 last:border-0"
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: idx * 0.03, duration: 0.3 }}
-                    >
+                    <motion.div key={hour} className="flex border-b border-border/20 last:border-0" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.03, duration: 0.3 }}>
                       <div className="w-16 py-5 text-right pr-4 text-xs text-muted-foreground shrink-0 font-semibold">{hour}:00</div>
                       <div className="flex-1 relative min-h-[64px] border-l border-border/20">
-                        {mappedEvents
-                          .filter((e) => e.startHour === hour)
-                          .map((event, i) => (
-                            <motion.div
-                              key={i}
-                              className={`absolute left-2 right-2 rounded-2xl px-4 py-2.5 border ${typeStyles.deep}`}
-                              style={{ height: `${event.durationHours * 64}px`, top: `${event.startMin}px` }}
-                              initial={{ opacity: 0, scale: 0.9 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ delay: 0.3 + i * 0.1, duration: 0.4, type: "spring" }}
-                            >
-                              <p className="text-xs font-bold truncate">{event.title}</p>
-                              <p className="text-[11px] opacity-70">{event.structureName} · {event.durationHours}h</p>
-                            </motion.div>
-                          ))}
+                        {mappedEvents.filter((e) => e.startHour === hour).map((event, i) => (
+                          <motion.div key={i} className="absolute left-2 right-2 rounded-2xl px-4 py-2.5 border bg-primary/12 border-primary/20 text-primary" style={{ height: `${Math.max(event.durationHours * 64, 40)}px`, top: `${event.startMin}px` }} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 + i * 0.1, duration: 0.4, type: "spring" }}>
+                            <p className="text-xs font-bold truncate">{event.title}</p>
+                            <p className="text-[11px] opacity-70">{event.structureName} · {event.durationHours.toFixed(1)}h</p>
+                          </motion.div>
+                        ))}
                       </div>
                     </motion.div>
                   ))}
@@ -134,24 +120,18 @@ const Planning = () => {
               </div>
             </FadeInSection>
 
-            {/* Right Panel */}
             <StaggerContainer className="space-y-5" delay={0.2}>
               <StaggerItem>
                 <div className="card-soft p-5">
                   <h2 className="text-sm font-bold text-foreground mb-3">À planifier</h2>
                   <div className="space-y-2">
                     {unplannedTasks.length === 0 && <p className="text-xs text-muted-foreground">Tout est planifié 🎉</p>}
-                    {unplannedTasks.map((task) => (
+                    {unplannedTasks.slice(0, 6).map((task) => (
                       <HoverCard key={task.id} className="p-3 rounded-2xl border border-dashed border-border hover:border-primary/30 hover:bg-primary/5 transition-all duration-200">
                         <p className="text-sm font-medium text-foreground">{task.action_label}</p>
                         <div className="flex items-center justify-between mt-2">
                           <span className={`pill text-[10px] font-bold px-2 py-0.5 ${task.priority === "high" ? "bg-destructive/20 text-destructive-foreground" : task.priority === "medium" ? "bg-warning/20 text-warning-foreground" : "bg-muted text-muted-foreground"}`}>{task.priority}</span>
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => handlePlanToday(task.id)}
-                            className="pill px-3 py-1 text-[11px] font-bold text-primary bg-primary/10 hover:bg-primary/20 transition-all"
-                          >
+                          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => handlePlanToday(task.id)} className="pill px-3 py-1 text-[11px] font-bold text-primary bg-primary/10 hover:bg-primary/20 transition-all">
                             Aujourd'hui
                           </motion.button>
                         </div>

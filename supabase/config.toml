@@ -1,1 +1,16 @@
 project_id = "emdjntdrtyxwlcyqxaby"
+
+[functions.coach-ia]
+verify_jwt = false
+
+[functions.email-analysis]
+verify_jwt = false
+
+[functions.autoplan]
+verify_jwt = false
+
+[functions.external-task]
+verify_jwt = false
+
+[functions.external-event]
+verify_jwt = false
