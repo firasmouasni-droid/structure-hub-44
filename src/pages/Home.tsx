@@ -1,13 +1,13 @@
 import { useStructures, useCreateStructure } from "@/hooks/useStructures";
 import { useLifeSpaces } from "@/hooks/useLifeSpaces";
-import { Plus, Brain, ArrowRight, CheckSquare, Calendar, Bot, Lock, Sun, CalendarDays, AlertTriangle } from "lucide-react";
+import { Plus, Brain, ArrowRight, CheckSquare, Calendar, Bot, Lock, Sun, CalendarDays, AlertTriangle, Circle, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/motion/MotionWrappers";
 import { motion } from "framer-motion";
-import { useTasks } from "@/hooks/useTasks";
+import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import WelcomeOnboarding from "@/components/onboarding/WelcomeOnboarding";
@@ -28,6 +28,7 @@ const Home = () => {
   const { data: lifeSpaces = [], isLoading: spacesLoading } = useLifeSpaces();
   const { data: allTasks = [] } = useTasks({ isInbox: false });
   const { data: allEvents = [] } = useCalendarEvents();
+  const updateTask = useUpdateTask();
 
   const now = new Date();
   const todayStr = now.toISOString().split("T")[0];
@@ -165,9 +166,18 @@ const Home = () => {
                   };
                   return (
                     <HoverCard key={t.id} className="card-soft p-4 flex items-center gap-4">
-                      <div className={`w-9 h-9 rounded-2xl ${priorityStyle[t.priority] ?? priorityStyle.medium} flex items-center justify-center shrink-0`}>
-                        <AlertTriangle className="w-4 h-4" />
-                      </div>
+                      <motion.button
+                        whileHover={{ scale: 1.15 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => {
+                          updateTask.mutate({ id: t.id, status: "done" });
+                          toast.success(`"${t.action_label}" terminée ✓`);
+                        }}
+                        className="w-9 h-9 rounded-2xl bg-muted/50 hover:bg-success/20 flex items-center justify-center shrink-0 transition-colors group"
+                      >
+                        <Circle className="w-5 h-5 text-muted-foreground group-hover:hidden" />
+                        <CheckCircle2 className="w-5 h-5 text-success hidden group-hover:block" />
+                      </motion.button>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-foreground truncate">{t.action_label}</p>
                         <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
