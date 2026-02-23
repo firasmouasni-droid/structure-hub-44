@@ -128,11 +128,17 @@ export type Database = {
           created_at: string
           current_value: number
           description: string | null
+          difficulty: string
           end_date: string | null
           id: string
+          kpi: string | null
+          kpi_unit: string | null
+          parent_goal_id: string | null
           period: string
           start_date: string | null
+          status: string
           structure_id: string
+          success_criteria: string | null
           target_value: number | null
           title: string
         }
@@ -140,11 +146,17 @@ export type Database = {
           created_at?: string
           current_value?: number
           description?: string | null
+          difficulty?: string
           end_date?: string | null
           id?: string
+          kpi?: string | null
+          kpi_unit?: string | null
+          parent_goal_id?: string | null
           period?: string
           start_date?: string | null
+          status?: string
           structure_id: string
+          success_criteria?: string | null
           target_value?: number | null
           title: string
         }
@@ -152,15 +164,28 @@ export type Database = {
           created_at?: string
           current_value?: number
           description?: string | null
+          difficulty?: string
           end_date?: string | null
           id?: string
+          kpi?: string | null
+          kpi_unit?: string | null
+          parent_goal_id?: string | null
           period?: string
           start_date?: string | null
+          status?: string
           structure_id?: string
+          success_criteria?: string | null
           target_value?: number | null
           title?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "goals_parent_goal_id_fkey"
+            columns: ["parent_goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "goals_structure_id_fkey"
             columns: ["structure_id"]
