@@ -3,6 +3,7 @@ import { Sidebar } from "./Sidebar";
 import { BottomNav } from "./BottomNav";
 import { Menu } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useEventReminders } from "@/hooks/useEventReminders";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -10,6 +11,7 @@ interface AppLayoutProps {
 
 const AppLayout = ({ children }: AppLayoutProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  useEventReminders();
 
   return (
     <div className="flex h-screen overflow-hidden">
