@@ -133,7 +133,7 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize,
   onTaskDrop?: (taskId: string, startMin: number) => void;
   onEventResize?: (eventId: string, newEndMin: number) => void;
   onEventDelete?: (eventId: string) => void;
-  onEventUpdate?: (id: string, title: string, category: string) => void;
+  onEventUpdate?: (id: string, title: string, category: string, startTime?: string, endTime?: string) => void;
   onEventCreate?: (title: string, category: string, startMin: number, durationMin: number) => void;
   workBlocks: WorkBlock[];
 }) {
@@ -145,6 +145,8 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize,
   const [editingEvent, setEditingEvent] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editCategory, setEditCategory] = useState("");
+  const [editStartTime, setEditStartTime] = useState("");
+  const [editEndTime, setEditEndTime] = useState("");
   const [creating, setCreating] = useState<{ startMin: number } | null>(null);
   const [createTitle, setCreateTitle] = useState("");
   const [createCategory, setCreateCategory] = useState<string>("admin");
@@ -339,6 +341,8 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize,
                   setEditingEvent(event.id);
                   setEditTitle(ev.title);
                   setEditCategory((ev as any).category || "admin");
+                  setEditStartTime(ev.start_time ? new Date(ev.start_time).toTimeString().slice(0, 5) : "");
+                  setEditEndTime(ev.end_time ? new Date(ev.end_time).toTimeString().slice(0, 5) : "");
                 }
               }}
             >
@@ -404,6 +408,26 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize,
                   className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground mb-1.5 block">Début</label>
+                  <input
+                    type="time"
+                    value={editStartTime}
+                    onChange={(e) => setEditStartTime(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground mb-1.5 block">Fin</label>
+                  <input
+                    type="time"
+                    value={editEndTime}
+                    onChange={(e) => setEditEndTime(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  />
+                </div>
+              </div>
               <div>
                 <label className="text-xs font-bold text-muted-foreground mb-1.5 block">Catégorie</label>
                 <div className="grid grid-cols-2 gap-1.5">
@@ -423,7 +447,7 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize,
                 <button
                   onClick={() => {
                     if (editTitle.trim()) {
-                      onEventUpdate?.(ev.id, editTitle.trim(), editCategory);
+                      onEventUpdate?.(ev.id, editTitle.trim(), editCategory, editStartTime, editEndTime);
                     }
                     setEditingEvent(null);
                   }}
@@ -830,12 +854,19 @@ const GlobalPlanning = () => {
     });
   }, [deleteEvent]);
 
-  const handleEventUpdate = useCallback((id: string, title: string, category: string) => {
-    updateEventDetails.mutate({ id, title, category }, {
+  const handleEventUpdate = useCallback((id: string, title: string, category: string, startTimeStr?: string, endTimeStr?: string) => {
+    let start_time: string | undefined;
+    let end_time: string | undefined;
+    if (startTimeStr && endTimeStr) {
+      const dateStr = (selectedDay || format(currentDate, "yyyy-MM-dd"));
+      start_time = `${dateStr}T${startTimeStr}:00`;
+      end_time = `${dateStr}T${endTimeStr}:00`;
+    }
+    updateEventDetails.mutate({ id, title, category, start_time, end_time }, {
       onSuccess: () => toast.success("Événement modifié !"),
       onError: () => toast.error("Erreur lors de la modification"),
     });
-  }, [updateEventDetails]);
+  }, [updateEventDetails, selectedDay, currentDate]);
 
   const handleEventCreate = useCallback(async (title: string, category: string, startMin: number, durationMin: number) => {
     const targetDate = selectedDay || new Date();
