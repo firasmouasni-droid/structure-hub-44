@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Inbox, CheckSquare, Calendar, Bot, Settings, Zap,
+  LayoutDashboard, Inbox, CheckSquare, Calendar, Bot, Settings,
 } from "lucide-react";
 import { useStructures } from "@/hooks/useStructures";
 import { useUserStats } from "@/hooks/useUserStats";
@@ -27,58 +27,58 @@ export const Sidebar = () => {
   const inboxCount = inboxTasks.length;
 
   return (
-    <aside className="w-64 h-screen bg-card border-r border-border flex flex-col card-shadow">
-      <div className="p-5 border-b border-border">
+    <aside className="w-60 h-screen bg-card border-r border-border flex flex-col">
+      <div className="px-5 py-4 border-b border-border">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-lg gradient-primary flex items-center justify-center">
-            <Zap className="w-5 h-5 text-primary-foreground" />
+          <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
+            <span className="text-primary-foreground text-xs font-bold">SC</span>
           </div>
           <div>
-            <h1 className="text-sm font-bold text-foreground tracking-tight">Second Cerveau</h1>
+            <h1 className="text-sm font-semibold text-foreground tracking-tight">Second Cerveau</h1>
             <p className="text-[11px] text-muted-foreground">Productivity OS</p>
           </div>
         </div>
       </div>
 
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        <p className="px-3 py-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Navigation</p>
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+        <p className="px-3 py-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Navigation</p>
         {mainNav.map((item) => {
           const isActive = location.pathname === item.path;
           const badge = item.path === "/inbox" && inboxCount > 0 ? inboxCount : null;
           return (
-            <Link key={item.path} to={item.path} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${isActive ? "bg-primary text-primary-foreground card-shadow" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}>
-              <item.icon className="w-[18px] h-[18px]" />
+            <Link key={item.path} to={item.path} className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${isActive ? "bg-accent text-foreground font-medium" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}>
+              <item.icon className="w-4 h-4" />
               <span>{item.label}</span>
               {badge && (
-                <span className={`ml-auto text-xs font-semibold rounded-full w-5 h-5 flex items-center justify-center ${isActive ? "bg-primary-foreground/20 text-primary-foreground" : "gradient-ai text-primary-foreground"}`}>{badge}</span>
+                <span className="ml-auto text-[11px] font-medium text-muted-foreground bg-accent rounded px-1.5 py-0.5">{badge}</span>
               )}
             </Link>
           );
         })}
 
-        <p className="px-3 pt-5 pb-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Structures</p>
+        <p className="px-3 pt-6 pb-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Structures</p>
         {structures.map((item) => {
           const isActive = location.pathname === `/structure/${item.id}`;
           return (
-            <Link key={item.id} to={`/structure/${item.id}`} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${isActive ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}>
-              <div className={`w-2.5 h-2.5 rounded-full ${item.color}`} />
+            <Link key={item.id} to={`/structure/${item.id}`} className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${isActive ? "bg-accent text-foreground font-medium" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}>
+              <div className={`w-2 h-2 rounded-full ${item.color}`} />
               <span>{item.name}</span>
             </Link>
           );
         })}
       </nav>
 
-      <div className="p-3 border-t border-border">
-        <Link to="/settings" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-all">
-          <Settings className="w-[18px] h-[18px]" /><span>Paramètres</span>
+      <div className="px-3 py-3 border-t border-border">
+        <Link to="/settings" className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
+          <Settings className="w-4 h-4" /><span>Paramètres</span>
         </Link>
         <div className="mt-3 px-3">
           <div className="flex items-center justify-between text-[11px] mb-1.5">
-            <span className="font-semibold text-foreground">Niveau {level}</span>
-            <span className="text-muted-foreground">{xp.toLocaleString()} / {(level * 1000).toLocaleString()} XP</span>
+            <span className="font-medium text-foreground">Niveau {level}</span>
+            <span className="text-muted-foreground">{xp.toLocaleString()} XP</span>
           </div>
-          <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <div className="h-full gradient-xp rounded-full" style={{ width: `${xpPercent}%` }} />
+          <div className="h-1 bg-accent rounded-full overflow-hidden">
+            <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${xpPercent}%` }} />
           </div>
         </div>
       </div>
