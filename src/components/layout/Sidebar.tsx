@@ -33,7 +33,16 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
   const { data: structures = [] } = useStructures();
   const { data: stats } = useUserStats();
   const { data: inboxTasks = [] } = useTasks({ isInbox: true });
+  const { data: allTasks = [] } = useTasks();
   const { data: lifeSpaces = [] } = useLifeSpaces();
+
+  // Count active tasks per structure
+  const taskCountByStructure = allTasks.reduce<Record<string, number>>((acc, t) => {
+    if (t.status === "todo" || t.status === "in_progress") {
+      acc[t.structure_id] = (acc[t.structure_id] || 0) + 1;
+    }
+    return acc;
+  }, {});
 
   // Work space is open by default when on a /global/* or /structures/* or /spaces/work route
   const isOnWorkRoute =
@@ -173,6 +182,11 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                           style={{ minWidth: 14 }}
                         />
                         <span className="truncate">{structure.name}</span>
+                        {(taskCountByStructure[structure.id] ?? 0) > 0 && (
+                          <span className="ml-auto text-[10px] font-bold bg-primary/15 text-primary w-5 h-5 flex items-center justify-center rounded-full flex-shrink-0">
+                            {taskCountByStructure[structure.id]}
+                          </span>
+                        )}
                       </Link>
                     );
                   })}
