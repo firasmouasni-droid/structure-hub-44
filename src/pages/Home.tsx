@@ -94,29 +94,29 @@ const Home = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                 <motion.div
-                  className="w-16 h-16 rounded-3xl gradient-primary shadow-soft flex items-center justify-center"
+                  className="w-12 h-12 sm:w-16 sm:h-16 rounded-3xl gradient-primary shadow-soft flex items-center justify-center shrink-0"
                   initial={{ scale: 0, rotate: -180 }}
                   animate={{ scale: 1, rotate: 0 }}
                   transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
                 >
-                  <Brain className="w-8 h-8 text-primary-foreground" />
+                  <Brain className="w-6 h-6 sm:w-8 sm:h-8 text-primary-foreground" />
                 </motion.div>
-                <div>
-                  <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Bonjour 👋</h1>
-                  <p className="text-sm text-muted-foreground mt-0.5 capitalize">
+                <div className="min-w-0">
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Bonjour 👋</h1>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 capitalize truncate">
                     {format(new Date(), "EEEE d MMMM", { locale: fr })} · Pilote ta vie, un espace à la fois
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 shrink-0">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setAuditOpen(true)}
-                  className="pill px-4 py-2 bg-card/70 backdrop-blur-sm shadow-soft flex items-center gap-2 cursor-pointer hover:bg-primary/10 transition-all"
+                  className="pill p-2 sm:px-4 sm:py-2 bg-card/70 backdrop-blur-sm shadow-soft flex items-center gap-2 cursor-pointer hover:bg-primary/10 transition-all"
                 >
                   <Sun className="w-4 h-4 text-warning" />
                   <span className="text-xs font-bold text-foreground hidden sm:inline">Check-in</span>
