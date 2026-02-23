@@ -1,7 +1,8 @@
 import { useCalendarEvents, useCalendarEventsRange, CalendarEvent } from "@/hooks/useCalendarEvents";
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { useRoutines } from "@/hooks/useRoutines";
-import { CalendarDays, Sparkles, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarDays, Sparkles, Loader2, ChevronLeft, ChevronRight, Compass } from "lucide-react";
+import GuidedDayDialog from "@/components/guided/GuidedDayDialog";
 import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay, eachDayOfInterval, isToday, getDay } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useState, useMemo } from "react";
@@ -238,6 +239,7 @@ const GlobalPlanning = () => {
   const routine = routines.find(r => !r.structure_id) || routines[0] || null;
   const routineZones = getRoutineZones(routine);
   const unplannedTasks = allTasks.filter(t => !t.due_date && t.status !== "done" && !t.is_inbox);
+  const [guidedOpen, setGuidedOpen] = useState(false);
 
   const handleAutoplan = async () => {
     setAutoplanning(true);
@@ -289,10 +291,17 @@ const GlobalPlanning = () => {
               <p className="text-sm text-muted-foreground capitalize">{dateLabel}</p>
             </div>
           </div>
-          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={handleAutoplan} disabled={autoplanning} className="flex items-center gap-2 px-5 py-2.5 rounded-2xl gradient-primary text-primary-foreground text-sm font-bold shadow-soft disabled:opacity-70">
-            {autoplanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            {autoplanning ? "Planification..." : "Auto-planifier via IA"}
-          </motion.button>
+          <div className="flex items-center gap-2">
+            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setGuidedOpen(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-primary/30 text-primary text-sm font-bold hover:bg-primary/5 transition-all">
+              <Compass className="w-4 h-4" />
+              Mode guidé
+            </motion.button>
+            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={handleAutoplan} disabled={autoplanning} className="flex items-center gap-2 px-5 py-2.5 rounded-2xl gradient-primary text-primary-foreground text-sm font-bold shadow-soft disabled:opacity-70">
+              {autoplanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              {autoplanning ? "Planification..." : "Auto-planifier via IA"}
+            </motion.button>
+          </div>
+          <GuidedDayDialog open={guidedOpen} onOpenChange={setGuidedOpen} />
         </div>
 
         {/* Tab bar + navigation arrows */}

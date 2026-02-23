@@ -4,7 +4,7 @@ import { useGoals } from "@/hooks/useGoals";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { useUserStats, useIncrementXP } from "@/hooks/useUserStats";
 import { useRoutines } from "@/hooks/useRoutines";
-import { CheckCircle2, Clock, TrendingUp, Target, Flame, Zap, Bot, ArrowRight, Sparkles, CalendarDays, AlertTriangle } from "lucide-react";
+import { CheckCircle2, Clock, TrendingUp, Target, Flame, Zap, Bot, ArrowRight, Sparkles, CalendarDays, AlertTriangle, Compass } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -14,6 +14,7 @@ import { PageTransition, StaggerContainer, StaggerItem, HoverCard, FadeInSection
 import { motion } from "framer-motion";
 import { useUpdateTask } from "@/hooks/useTasks";
 import RoutineOnboarding from "@/components/onboarding/RoutineOnboarding";
+import GuidedDayDialog from "@/components/guided/GuidedDayDialog";
 
 const GlobalDashboard = () => {
   const { data: tasks = [] } = useTasks();
@@ -32,6 +33,7 @@ const GlobalDashboard = () => {
   const hasRoutine = routines.some(r => !r.structure_id);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [onboardingDismissed, setOnboardingDismissed] = useState(false);
+  const [guidedOpen, setGuidedOpen] = useState(false);
 
   useEffect(() => {
     if (!hasRoutine && routines !== undefined && !onboardingDismissed) {
@@ -79,6 +81,9 @@ const GlobalDashboard = () => {
                 <p className="text-sm text-muted-foreground capitalize">{format(new Date(), "EEEE d MMMM", { locale: fr })}</p>
               </div>
               <div className="hidden sm:flex items-center gap-2">
+                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setGuidedOpen(true)} className="pill px-3 py-1.5 bg-card/70 backdrop-blur-sm shadow-soft flex items-center gap-1.5 cursor-pointer hover:bg-primary/10 transition-all">
+                  <Compass className="w-3.5 h-3.5 text-primary" /><span className="text-xs font-bold text-foreground">Mode guidé</span>
+                </motion.button>
                 <div className="pill px-3 py-1.5 bg-card/70 backdrop-blur-sm shadow-soft flex items-center gap-1.5">
                   <Flame className="w-3.5 h-3.5 text-warning" /><span className="text-xs font-bold text-foreground">{streak}j</span>
                 </div>
@@ -294,6 +299,7 @@ const GlobalDashboard = () => {
           open={onboardingOpen}
           onOpenChange={(open) => { setOnboardingOpen(open); if (!open) setOnboardingDismissed(true); }}
         />
+        <GuidedDayDialog open={guidedOpen} onOpenChange={setGuidedOpen} />
     </PageTransition>
   );
 };
