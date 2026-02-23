@@ -1,7 +1,7 @@
 import { Link, useLocation, useParams } from "react-router-dom";
 import {
   LayoutDashboard, Inbox, CheckSquare, Calendar, Bot, Settings, Target, Clock,
-  ChevronDown, ChevronRight, BarChart3,
+  ChevronDown, ChevronRight, BarChart3, Trophy,
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { useStructures } from "@/hooks/useStructures";
@@ -17,6 +17,7 @@ const globalNav = [
   { label: "Planning", icon: Calendar, path: "/global/planning" },
   { label: "Objectifs", icon: Target, path: "/global/objectives" },
   { label: "Analytics", icon: BarChart3, path: "/global/analytics" },
+  { label: "Gamification", icon: Trophy, path: "/global/gamification" },
   { label: "Coach IA", icon: Bot, path: "/global/coach" },
 ];
 

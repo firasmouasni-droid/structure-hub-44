@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Play, Pause, SkipForward, Timer, Brain, Zap } from "lucide-react";
 import { Task, useUpdateTask } from "@/hooks/useTasks";
 import { useIncrementXP } from "@/hooks/useUserStats";
+import { useLogXPEvent, useCheckBadges } from "@/hooks/useGamification";
 import { toast } from "sonner";
 
 interface FocusModeProps {
@@ -17,6 +18,8 @@ const FocusMode = ({ task, onClose, onComplete, onNextAction }: FocusModeProps) 
   const [isRunning, setIsRunning] = useState(true);
   const updateTask = useUpdateTask();
   const incrementXP = useIncrementXP();
+  const logXP = useLogXPEvent();
+  const { checkAndAward } = useCheckBadges();
   const duration = (task.estimated_duration || 30) * 60; // seconds
 
   useEffect(() => {
@@ -40,7 +43,16 @@ const FocusMode = ({ task, onClose, onComplete, onNextAction }: FocusModeProps) 
       status: "done",
       actual_duration: Math.round(elapsed / 60),
     });
-    await incrementXP.mutateAsync(25); // bonus XP for deep work
+    await incrementXP.mutateAsync(25);
+    await logXP.mutateAsync({
+      event_type: "deep_work_completed",
+      xp_amount: 25,
+      description: `Deep Work : ${task.action_label} (${Math.round(elapsed / 60)} min)`,
+    });
+    // Check deep work badges
+    const { data: xpEvts } = await (await import("@/integrations/supabase/client")).supabase
+      .from("xp_events").select("id").eq("event_type", "deep_work_completed");
+    if (xpEvts) await checkAndAward("deep_work_sessions", xpEvts.length);
     toast.success("+25 XP pour deep work complété ! 🧠");
     onComplete();
   };

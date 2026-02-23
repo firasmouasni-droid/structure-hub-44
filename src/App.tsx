@@ -15,6 +15,7 @@ import GlobalSources from "./pages/global/GlobalSources";
 import GlobalRoutines from "./pages/global/GlobalRoutines";
 import GlobalCoach from "./pages/global/GlobalCoach";
 import GlobalAnalytics from "./pages/global/GlobalAnalytics";
+import GlobalGamification from "./pages/global/GlobalGamification";
 import StructureDashboard from "./pages/StructureDashboard";
 import StructureTasks from "./pages/structure/StructureTasks";
 import StructureInbox from "./pages/structure/StructureInbox";
@@ -48,6 +49,7 @@ const App = () => (
           <Route path="/global/routines" element={<AppLayout><GlobalRoutines /></AppLayout>} />
           <Route path="/global/coach" element={<AppLayout><GlobalCoach /></AppLayout>} />
           <Route path="/global/analytics" element={<AppLayout><GlobalAnalytics /></AppLayout>} />
+          <Route path="/global/gamification" element={<AppLayout><GlobalGamification /></AppLayout>} />
 
           {/* Structure spaces — StructureLayout with topbar */}
           <Route path="/structures/:id/dashboard" element={<StructureLayout><StructureDashboard /></StructureLayout>} />
