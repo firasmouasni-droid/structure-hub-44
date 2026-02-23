@@ -1,4 +1,3 @@
-import AppLayout from "@/components/layout/AppLayout";
 import { useConnectors, useCreateConnector, useUpdateConnector } from "@/hooks/useConnectors";
 import { Mail, Calendar, Briefcase, Plus, Wifi, WifiOff, ToggleRight, ToggleLeft, HardDrive, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
@@ -56,8 +55,7 @@ const GlobalSources = () => {
   };
 
   return (
-    <AppLayout>
-      <PageTransition>
+    <PageTransition>
         <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
           <div className="flex items-center gap-3">
             <motion.div className="w-12 h-12 rounded-3xl bg-accent/15 flex items-center justify-center shadow-soft" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}>
@@ -112,8 +110,7 @@ const GlobalSources = () => {
             ))}
           </StaggerContainer>
         </div>
-      </PageTransition>
-    </AppLayout>
+    </PageTransition>
   );
 };
 

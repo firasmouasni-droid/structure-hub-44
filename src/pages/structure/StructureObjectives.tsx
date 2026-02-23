@@ -1,4 +1,3 @@
-import StructureLayout from "@/components/layout/StructureLayout";
 import { useGoals } from "@/hooks/useGoals";
 import { useParams } from "react-router-dom";
 import { Target } from "lucide-react";
@@ -21,8 +20,7 @@ const StructureObjectives = () => {
   const filtered = period === "all" ? goals : goals.filter(g => g.period === period);
 
   return (
-    <StructureLayout>
-      <PageTransition>
+    <PageTransition>
         <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
           <div className="flex items-center gap-3">
             <motion.div className="w-12 h-12 rounded-3xl bg-secondary/15 flex items-center justify-center shadow-soft" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}>
@@ -90,8 +88,7 @@ const StructureObjectives = () => {
             })}
           </StaggerContainer>
         </div>
-      </PageTransition>
-    </StructureLayout>
+    </PageTransition>
   );
 };
 

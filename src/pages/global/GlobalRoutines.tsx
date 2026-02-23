@@ -1,4 +1,3 @@
-import AppLayout from "@/components/layout/AppLayout";
 import { useRoutines, useCreateRoutine, useUpdateRoutine } from "@/hooks/useRoutines";
 import { Clock, Sun, Coffee, Mail, Save } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -52,8 +51,7 @@ const GlobalRoutines = () => {
   };
 
   return (
-    <AppLayout>
-      <PageTransition>
+    <PageTransition>
         <div className="p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
           <div className="flex items-center gap-3">
             <motion.div className="w-12 h-12 rounded-3xl bg-warning/15 flex items-center justify-center shadow-soft" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}>
@@ -117,8 +115,7 @@ const GlobalRoutines = () => {
             <Save className="w-4 h-4" /> Sauvegarder les routines
           </motion.button>
         </div>
-      </PageTransition>
-    </AppLayout>
+    </PageTransition>
   );
 };
 

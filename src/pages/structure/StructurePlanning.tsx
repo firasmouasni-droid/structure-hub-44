@@ -1,4 +1,3 @@
-import StructureLayout from "@/components/layout/StructureLayout";
 import { useCalendarEventsByStructure } from "@/hooks/useCalendarEvents";
 import { useTasksByStructure, useUpdateTask } from "@/hooks/useTasks";
 import { CalendarDays, Sparkles, Loader2 } from "lucide-react";
@@ -64,8 +63,7 @@ const StructurePlanning = () => {
   const dateStr = format(new Date(), "EEEE d MMMM", { locale: fr });
 
   return (
-    <StructureLayout>
-      <PageTransition>
+    <PageTransition>
         <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -143,8 +141,7 @@ const StructurePlanning = () => {
             </StaggerContainer>
           </div>
         </div>
-      </PageTransition>
-    </StructureLayout>
+    </PageTransition>
   );
 };
 

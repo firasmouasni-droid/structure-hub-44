@@ -1,4 +1,3 @@
-import AppLayout from "@/components/layout/AppLayout";
 import { User, Bell, Palette } from "lucide-react";
 import { PageTransition, StaggerContainer, StaggerItem } from "@/components/motion/MotionWrappers";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
@@ -7,8 +6,7 @@ import { useTheme } from "@/hooks/useTheme";
 const SettingsPage = () => {
   const { theme } = useTheme();
   return (
-    <AppLayout>
-      <PageTransition>
+    <PageTransition>
         <div className="p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
           <h1 className="text-2xl font-bold text-foreground">Paramètres</h1>
 
@@ -55,8 +53,7 @@ const SettingsPage = () => {
             </StaggerItem>
           </StaggerContainer>
         </div>
-      </PageTransition>
-    </AppLayout>
+    </PageTransition>
   );
 };
 

@@ -1,4 +1,3 @@
-import StructureLayout from "@/components/layout/StructureLayout";
 import { useStructure } from "@/hooks/useStructures";
 import { useTasksByStructure, useUpdateTask } from "@/hooks/useTasks";
 import { useGoals } from "@/hooks/useGoals";
@@ -45,11 +44,10 @@ const StructureDashboard = () => {
     if (next === "done") { await incrementXP.mutateAsync(10); toast.success("+10 XP !"); }
   };
 
-  if (!structure) return <StructureLayout><div className="p-8 text-center text-muted-foreground">Chargement...</div></StructureLayout>;
+  if (!structure) return <div className="p-8 text-center text-muted-foreground">Chargement...</div>;
 
   return (
-    <StructureLayout>
-      <PageTransition>
+    <PageTransition>
         <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
           {/* Header */}
           <motion.div className="gradient-header rounded-3xl p-6" initial={{ opacity: 0, y: -15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
@@ -247,8 +245,7 @@ const StructureDashboard = () => {
             </StaggerContainer>
           </div>
         </div>
-      </PageTransition>
-    </StructureLayout>
+    </PageTransition>
   );
 };
 
