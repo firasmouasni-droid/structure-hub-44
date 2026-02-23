@@ -1,9 +1,9 @@
-import { useTasks } from "@/hooks/useTasks";
+import { useTasks, useWIPStatus, WIP_LIMITS } from "@/hooks/useTasks";
 import { useStructures } from "@/hooks/useStructures";
 import { useGoals } from "@/hooks/useGoals";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { useUserStats, useIncrementXP } from "@/hooks/useUserStats";
-import { CheckCircle2, Clock, TrendingUp, Target, Flame, Zap, Bot, ArrowRight, Sparkles, CalendarDays } from "lucide-react";
+import { CheckCircle2, Clock, TrendingUp, Target, Flame, Zap, Bot, ArrowRight, Sparkles, CalendarDays, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -21,6 +21,8 @@ const GlobalDashboard = () => {
   const incrementXP = useIncrementXP();
   const today = new Date().toISOString().split("T")[0];
   const { data: todayEvents = [] } = useCalendarEvents(today);
+
+  const wip = useWIPStatus();
 
   const doneTasks = tasks.filter(t => t.status === "done").length;
   const todayTasks = tasks.filter(t => t.due_date === today);
@@ -78,6 +80,25 @@ const GlobalDashboard = () => {
             <StaggerItem><QuickStat icon={<TrendingUp className="w-5 h-5" />} iconBg="bg-primary/15 text-primary" label="Progression" value={`${progress}%`} /></StaggerItem>
             <StaggerItem><QuickStat icon={<Target className="w-5 h-5" />} iconBg="bg-secondary/15 text-secondary" label="Restantes" value={String(remaining)} /></StaggerItem>
           </StaggerContainer>
+
+          {/* WIP Alert — Kanban Science */}
+          {wip.globalExceeded && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="card-soft p-4 border-l-4 border-warning flex items-start gap-3"
+            >
+              <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-bold text-foreground">
+                  WIP dépassé : {wip.globalWIP} tâches en cours (max {WIP_LIMITS.global})
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Les études montrent que limiter le travail en cours améliore la vitesse et réduit le stress. Termine ou mets en pause une tâche avant d'en commencer une nouvelle.
+                </p>
+              </div>
+            </motion.div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
