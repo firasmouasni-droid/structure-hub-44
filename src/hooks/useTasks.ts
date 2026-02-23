@@ -20,6 +20,9 @@ export interface Task {
   urgency: number;
   actual_duration: number | null;
   computed_priority: number | null;
+  parent_task_id: string | null;
+  next_action: string | null;
+  is_refined: boolean;
 }
 
 export interface TaskInsert {
