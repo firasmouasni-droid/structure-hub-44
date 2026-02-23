@@ -1,6 +1,6 @@
 import { useStructures, useCreateStructure } from "@/hooks/useStructures";
 import { useLifeSpaces } from "@/hooks/useLifeSpaces";
-import { Plus, Brain, ArrowRight, CheckSquare, Inbox, Calendar, Bot, Target, Clock, Lock, Sun } from "lucide-react";
+import { Plus, Brain, ArrowRight, CheckSquare, Inbox, Calendar, Bot, Target, Clock, Lock, Sun, CalendarDays } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -9,6 +9,7 @@ import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/comp
 import { motion } from "framer-motion";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useTasks } from "@/hooks/useTasks";
+import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import WelcomeOnboarding from "@/components/onboarding/WelcomeOnboarding";
 import MorningAuditDialog from "@/components/audit/MorningAuditDialog";
@@ -28,6 +29,14 @@ const Home = () => {
   const { data: lifeSpaces = [], isLoading: spacesLoading } = useLifeSpaces();
   const { data: stats } = useUserStats();
   const { data: allTasks = [] } = useTasks({ isInbox: false });
+  const { data: allEvents = [] } = useCalendarEvents();
+
+  // Next 3 upcoming events (from now)
+  const now = new Date();
+  const upcomingEvents = allEvents
+    .filter(e => new Date(e.start_time) >= now)
+    .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+    .slice(0, 3);
   const createStructure = useCreateStructure();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newStructure, setNewStructure] = useState({ name: "", color: "bg-primary", description: "" });
@@ -150,6 +159,36 @@ const Home = () => {
               ))}
             </div>
           </motion.div>
+
+          {/* ── Prochains événements ── */}
+          {upcomingEvents.length > 0 && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-foreground">Prochains événements</h2>
+                <Link to="/global/planning" className="text-xs text-primary font-medium hover:underline flex items-center gap-1">Voir le planning <ArrowRight className="w-3 h-3" /></Link>
+              </div>
+              <div className="space-y-2">
+                {upcomingEvents.map(e => {
+                  const eventDate = new Date(e.start_time);
+                  const isToday = eventDate.toDateString() === now.toDateString();
+                  const struct = structures.find(s => s.id === e.structure_id);
+                  return (
+                    <HoverCard key={e.id} className="card-soft p-4 flex items-center gap-4">
+                      <div className="flex flex-col items-center w-14 shrink-0">
+                        <span className="text-sm font-bold text-primary">{format(eventDate, "HH:mm")}</span>
+                        <span className="text-[10px] text-muted-foreground">{isToday ? "Aujourd'hui" : format(eventDate, "EEE d", { locale: fr })}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">{e.title}</p>
+                        {struct && <p className="text-[11px] text-muted-foreground">{struct.name}</p>}
+                      </div>
+                      <CalendarDays className="w-4 h-4 text-muted-foreground shrink-0" />
+                    </HoverCard>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
 
           {/* ── Espaces de vie actifs ── */}
           <div className="space-y-4">
