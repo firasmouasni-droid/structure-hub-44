@@ -2,7 +2,7 @@ import { useCalendarEvents, useCalendarEventsRange, useUpdateCalendarEvent, useD
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { useRoutines } from "@/hooks/useRoutines";
 import { useWorkHoursSettings, useUpsertWorkHours, DEFAULT_WORK_HOURS, getWorkBlocks, parseTime } from "@/hooks/useWorkHours";
-import { CalendarDays, Sparkles, Loader2, ChevronLeft, ChevronRight, Compass, Sun, Edit3, Clock, Settings, Trash2, X } from "lucide-react";
+import { CalendarDays, Sparkles, Loader2, ChevronLeft, ChevronRight, Compass, Sun, Edit3, Clock, Settings, Trash2, X, AlertTriangle } from "lucide-react";
 import GuidedDayDialog from "@/components/guided/GuidedDayDialog";
 import MorningAuditDialog from "@/components/audit/MorningAuditDialog";
 import PlanningBlock from "@/components/planning/PlanningBlock";
@@ -715,18 +715,24 @@ const GlobalPlanning = () => {
     }
   }, [allTasks, selectedDay, qc]);
 
+  const [autoplanResult, setAutoplanResult] = useState<any>(null);
+
   const handleAutoplan = async () => {
     setAutoplanning(true);
+    setAutoplanResult(null);
     try {
       const { data, error } = await supabase.functions.invoke("autoplan", { body: {} });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      const skipped = data.skipped_count > 0 ? ` (${data.skipped_count} reportées)` : '';
-      const routineInfo = data.routine_used ? ` · Routine: ${data.routine_used}` : '';
-      toast.success(`${data.planned} tâches planifiées par l'IA !${skipped}${routineInfo} 🤖`);
-      if (data.placement_summary) {
-        toast.info(data.placement_summary, { duration: 5000 });
+
+      setAutoplanResult(data);
+      const dateCount = data.planned_dates?.length || 1;
+      toast.success(`${data.planned} tâches planifiées sur ${dateCount} jour(s) 🤖`);
+
+      if (data.overload_warning) {
+        toast.warning(data.overload_warning, { duration: 8000 });
       }
+
       qc.invalidateQueries({ queryKey: ["calendar_events"] });
       qc.invalidateQueries({ queryKey: ["tasks"] });
     } catch (e: any) { toast.error(e.message || "Erreur d'auto-planification"); }
@@ -886,7 +892,73 @@ const GlobalPlanning = () => {
           </motion.div>
         )}
 
-        {/* Tab bar + navigation arrows */}
+        {/* Autoplan result summary */}
+        {autoplanResult && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="card-soft p-5 space-y-3"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                Résultat de l'auto-planification
+              </h3>
+              <button onClick={() => setAutoplanResult(null)} className="p-1 rounded-lg hover:bg-muted transition-colors">
+                <X className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
+            </div>
+
+            <div className="text-xs text-muted-foreground">
+              {autoplanResult.planned} tâche(s) planifiée(s) sur {autoplanResult.planned_dates?.length || 1} jour(s)
+            </div>
+
+            {/* Days breakdown */}
+            {autoplanResult.days_breakdown?.filter((d: any) => d.tasks.length > 0).map((day: any) => (
+              <div key={day.date} className="rounded-xl border border-border/30 p-3">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-bold text-foreground">{day.label}</span>
+                  <span className="text-[10px] text-muted-foreground">{day.used}/{day.max} min utilisées</span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden mb-2">
+                  <div className="h-full rounded-full transition-all" style={{
+                    width: `${Math.min((day.used / day.max) * 100, 100)}%`,
+                    backgroundColor: day.used > day.max * 0.9 ? "hsl(var(--destructive))" : "hsl(var(--primary))",
+                  }} />
+                </div>
+                <div className="space-y-0.5">
+                  {day.tasks.map((t: any, i: number) => (
+                    <div key={i} className="flex items-center justify-between text-[11px]">
+                      <span className="text-foreground truncate flex-1 mr-2">{t.label}</span>
+                      <span className="text-muted-foreground shrink-0">{t.duration} min</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {/* At risk warnings */}
+            {autoplanResult.at_risk?.length > 0 && (
+              <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-destructive" />
+                  <span className="text-xs font-bold text-destructive">Tâches à risque</span>
+                </div>
+                {autoplanResult.at_risk.map((t: any, i: number) => (
+                  <p key={i} className="text-[11px] text-destructive/80">• {t.label}: {t.reason}</p>
+                ))}
+              </div>
+            )}
+
+            {autoplanResult.skipped?.length > 0 && (
+              <p className="text-[11px] text-muted-foreground">
+                {autoplanResult.skipped.length} tâche(s) reportée(s) par manque de capacité.
+              </p>
+            )}
+          </motion.div>
+        )}
+
+
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1 p-1 bg-card/70 backdrop-blur-sm rounded-2xl shadow-soft">
             {TABS.map(tab => (
