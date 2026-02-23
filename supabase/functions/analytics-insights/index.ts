@@ -107,17 +107,37 @@ Génère exactement 3-5 insights actionnables et personnalisés. Chaque insight 
 Réponds UNIQUEMENT en JSON : { "insights": ["insight1", "insight2", ...] }`;
 
       try {
-        const response = await fetch("https://api.lovable.dev/v1/chat/completions", {
+        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
           body: JSON.stringify({
             model: "google/gemini-2.5-flash",
             messages: [{ role: "user", content: prompt }],
             temperature: 0.4,
+            stream: false,
           }),
         });
-        const result = await response.json();
-        const raw = result.choices?.[0]?.message?.content || "";
+        const text = await response.text();
+        // Handle both SSE streamed and JSON responses
+        let raw = "";
+        if (text.startsWith("data: ")) {
+          // SSE format - collect all data chunks
+          const lines = text.split("\n");
+          for (const line of lines) {
+            if (line.startsWith("data: ") && !line.includes("[DONE]")) {
+              try {
+                const chunk = JSON.parse(line.slice(6));
+                raw += chunk.choices?.[0]?.delta?.content || chunk.choices?.[0]?.message?.content || "";
+              } catch {}
+            }
+          }
+        } else {
+          // Standard JSON response
+          try {
+            const result = JSON.parse(text);
+            raw = result.choices?.[0]?.message?.content || "";
+          } catch {}
+        }
         const jsonMatch = raw.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           const parsed = JSON.parse(jsonMatch[0]);
