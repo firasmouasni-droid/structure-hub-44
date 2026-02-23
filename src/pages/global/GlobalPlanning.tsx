@@ -1,7 +1,7 @@
 import { useCalendarEvents, useCalendarEventsRange, useUpdateCalendarEvent, CalendarEvent } from "@/hooks/useCalendarEvents";
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { useRoutines } from "@/hooks/useRoutines";
-import { CalendarDays, Sparkles, Loader2, ChevronLeft, ChevronRight, Compass, Sun, Edit3 } from "lucide-react";
+import { CalendarDays, Sparkles, Loader2, ChevronLeft, ChevronRight, Compass, Sun, Edit3, Clock } from "lucide-react";
 import GuidedDayDialog from "@/components/guided/GuidedDayDialog";
 import MorningAuditDialog from "@/components/audit/MorningAuditDialog";
 import PlanningBlock from "@/components/planning/PlanningBlock";
@@ -352,6 +352,79 @@ function MonthView({ events, currentDate, onDayClick }: { events: CalendarEvent[
   );
 }
 
+// ── Time picker for unplanned tasks ──
+const TIME_SLOTS = (() => {
+  const slots: { hour: number; minute: number; label: string }[] = [];
+  for (let h = 7; h <= 20; h++) {
+    for (const m of [0, 15, 30, 45]) {
+      slots.push({ hour: h, minute: m, label: `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}` });
+    }
+  }
+  return slots;
+})();
+
+function UnplannedTaskCard({ task, cat, CatIcon, onSchedule, onDragStart }: {
+  task: any;
+  cat: any;
+  CatIcon: any;
+  onSchedule: (hour: number, minute: number) => void;
+  onDragStart: (e: React.DragEvent) => void;
+}) {
+  const [showPicker, setShowPicker] = useState(false);
+
+  return (
+    <div
+      draggable
+      onDragStart={onDragStart}
+      className="p-3 rounded-2xl border border-dashed transition-all cursor-grab active:cursor-grabbing hover:-translate-y-0.5 hover:shadow-md relative"
+      style={{ borderColor: `${cat.colors.normal}30`, backgroundColor: `${cat.colors.light}12` }}
+    >
+      <div className="flex items-center gap-2">
+        <CatIcon className="w-3.5 h-3.5 shrink-0" style={{ color: cat.colors.normal }} />
+        <p className="text-sm font-medium text-foreground truncate flex-1">{task.action_label}</p>
+        <button
+          onClick={(e) => { e.stopPropagation(); setShowPicker(!showPicker); }}
+          className="shrink-0 p-1.5 rounded-lg hover:bg-primary/10 transition-colors"
+          title="Choisir l'heure"
+        >
+          <Clock className="w-3.5 h-3.5 text-primary" />
+        </button>
+      </div>
+      <div className="flex items-center gap-2 mt-1.5">
+        <span className="pill text-[10px] font-bold px-2 py-0.5" style={{ backgroundColor: `${cat.colors.light}50`, color: cat.colors.normal }}>{cat.label}</span>
+        {task.estimated_duration && (
+          <span className="text-[10px] text-muted-foreground">{task.estimated_duration} min</span>
+        )}
+        {task.priority === "high" && (
+          <span className="pill text-[10px] font-bold px-2 py-0.5" style={{ backgroundColor: `${CATEGORIES.urgent.colors.light}50`, color: CATEGORIES.urgent.colors.normal }}>Prioritaire</span>
+        )}
+      </div>
+
+      {/* Time picker dropdown */}
+      {showPicker && (
+        <motion.div
+          initial={{ opacity: 0, y: -4, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          className="absolute left-0 right-0 top-full mt-1 z-50 bg-card border border-border/50 rounded-2xl shadow-lg p-2 max-h-48 overflow-y-auto"
+        >
+          <p className="text-[10px] text-muted-foreground font-semibold px-2 py-1 mb-1">Planifier à…</p>
+          <div className="grid grid-cols-4 gap-1">
+            {TIME_SLOTS.map(slot => (
+              <button
+                key={slot.label}
+                onClick={() => { onSchedule(slot.hour, slot.minute); setShowPicker(false); }}
+                className="px-1.5 py-1.5 rounded-lg text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+              >
+                {slot.label}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
 // ── Main component ──
 const GlobalPlanning = () => {
   const [activeTab, setActiveTab] = useState("today");
@@ -619,32 +692,19 @@ const GlobalPlanning = () => {
                     const cat = CATEGORIES[(task as any).category as TaskCategory] || CATEGORIES.admin;
                     const CatIcon = cat.icon;
                     return (
-                      <div
+                      <UnplannedTaskCard
                         key={task.id}
-                        draggable
+                        task={task}
+                        cat={cat}
+                        CatIcon={CatIcon}
+                        onSchedule={(hour, minute) => handleTaskDrop(task.id, (hour - START_HOUR) * 60 + minute)}
                         onDragStart={(e) => {
                           e.dataTransfer.setData("text/plain", task.id);
                           e.dataTransfer.setData("drag-type", "task");
                           e.dataTransfer.setData("duration", String(task.estimated_duration || 30));
                           e.dataTransfer.effectAllowed = "copyMove";
                         }}
-                        className="p-3 rounded-2xl border border-dashed transition-all cursor-grab active:cursor-grabbing hover:-translate-y-0.5 hover:shadow-md"
-                        style={{ borderColor: `${cat.colors.normal}30`, backgroundColor: `${cat.colors.light}12` }}
-                      >
-                        <div className="flex items-center gap-2">
-                          <CatIcon className="w-3.5 h-3.5 shrink-0" style={{ color: cat.colors.normal }} />
-                          <p className="text-sm font-medium text-foreground truncate">{task.action_label}</p>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1.5">
-                          <span className="pill text-[10px] font-bold px-2 py-0.5" style={{ backgroundColor: `${cat.colors.light}50`, color: cat.colors.normal }}>{cat.label}</span>
-                          {task.estimated_duration && (
-                            <span className="text-[10px] text-muted-foreground">{task.estimated_duration} min</span>
-                          )}
-                          {task.priority === "high" && (
-                            <span className="pill text-[10px] font-bold px-2 py-0.5" style={{ backgroundColor: `${CATEGORIES.urgent.colors.light}50`, color: CATEGORIES.urgent.colors.normal }}>Prioritaire</span>
-                          )}
-                        </div>
-                      </div>
+                      />
                     );
                   })}
                 </div>
