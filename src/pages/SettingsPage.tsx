@@ -1,8 +1,11 @@
 import AppLayout from "@/components/layout/AppLayout";
 import { User, Bell, Palette } from "lucide-react";
 import { PageTransition, StaggerContainer, StaggerItem } from "@/components/motion/MotionWrappers";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { useTheme } from "@/hooks/useTheme";
 
 const SettingsPage = () => {
+  const { theme } = useTheme();
   return (
     <AppLayout>
       <PageTransition>
@@ -41,7 +44,13 @@ const SettingsPage = () => {
 
             <StaggerItem>
               <SettingSection icon={<Palette className="w-5 h-5 text-secondary" />} title="Apparence" description="Personnaliser l'interface">
-                <p className="text-sm text-muted-foreground">Mode Pastel Soft UI activé ✨</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-foreground font-medium">Mode {theme === 'dark' ? 'sombre' : 'clair'}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Pastel Soft UI ✨</p>
+                  </div>
+                  <ThemeToggle />
+                </div>
               </SettingSection>
             </StaggerItem>
           </StaggerContainer>
@@ -72,7 +81,7 @@ const InputField = ({ label, value }: { label: string; value: string }) => (
     <input
       type="text"
       defaultValue={value}
-      className="w-full px-4 py-3 rounded-2xl border border-border bg-white/90 text-sm text-foreground shadow-inner-soft focus:outline-none focus:ring-2 focus:ring-primary/30"
+      className="w-full px-4 py-3 rounded-2xl border border-border bg-card/90 text-sm text-foreground shadow-inner-soft focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors duration-300"
     />
   </div>
 );

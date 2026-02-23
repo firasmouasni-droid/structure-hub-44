@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Inbox, CheckSquare, Calendar, Bot, Settings,
 } from "lucide-react";
+import { ThemeToggle } from "./ThemeToggle";
 import { useStructures } from "@/hooks/useStructures";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useTasks } from "@/hooks/useTasks";
@@ -31,7 +32,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
   const inboxCount = inboxTasks.length;
 
   return (
-    <aside className="w-64 h-screen bg-white/90 backdrop-blur-sm border-r border-border/50 flex flex-col">
+    <aside className="w-64 h-screen bg-card/90 backdrop-blur-sm border-r border-border/50 flex flex-col transition-colors duration-300">
       {/* Logo */}
       <div className="px-5 py-5">
         <div className="flex items-center gap-3">
@@ -74,6 +75,10 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
       </nav>
 
       <div className="p-4 border-t border-border/50">
+        <div className="flex items-center justify-between px-4 py-2 mb-2">
+          <span className="text-xs text-muted-foreground font-medium">Thème</span>
+          <ThemeToggle />
+        </div>
         <Link to="/settings" onClick={onNavigate} className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all">
           <Settings className="w-[18px] h-[18px]" /><span>Paramètres</span>
         </Link>

@@ -44,7 +44,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
       <main className="flex-1 overflow-y-auto bg-background">
         {/* Mobile top bar */}
-        <div className="sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-white/80 backdrop-blur-sm border-b border-border/50 lg:hidden">
+        <div className="sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-card/80 backdrop-blur-sm border-b border-border/50 lg:hidden transition-colors duration-300">
           <button
             onClick={() => setMobileOpen(true)}
             className="p-2 rounded-xl bg-muted hover:bg-muted/80 transition-colors"

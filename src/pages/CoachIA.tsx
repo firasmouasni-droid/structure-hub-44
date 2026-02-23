@@ -50,7 +50,7 @@ const CoachIA = () => {
       <div className="flex flex-col h-full">
         {/* Header */}
         <motion.div
-          className="border-b border-border/30 bg-white/80 backdrop-blur-sm px-6 py-4"
+          className="border-b border-border/30 bg-card/80 backdrop-blur-sm px-6 py-4 transition-colors duration-300"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
@@ -91,7 +91,7 @@ const CoachIA = () => {
                   <div className={`max-w-[75%] rounded-3xl px-5 py-3.5 text-sm leading-relaxed ${
                     msg.role === "user"
                       ? "gradient-primary text-primary-foreground shadow-soft rounded-br-lg"
-                      : "bg-white/90 border border-border/30 text-foreground shadow-soft rounded-bl-lg"
+                      : "bg-card/90 border border-border/30 text-foreground shadow-soft rounded-bl-lg"
                   }`}>
                     <div className="whitespace-pre-line">{msg.content}</div>
                   </div>
@@ -107,7 +107,7 @@ const CoachIA = () => {
                 <div className="w-8 h-8 rounded-2xl gradient-warm flex items-center justify-center mr-3 mt-1 shrink-0 shadow-soft">
                   <Bot className="w-4 h-4 text-primary-foreground" />
                 </div>
-                <div className="bg-white/90 border border-border/30 rounded-3xl rounded-bl-lg px-5 py-3.5 text-sm text-muted-foreground shadow-soft">
+                <div className="bg-card/90 border border-border/30 rounded-3xl rounded-bl-lg px-5 py-3.5 text-sm text-muted-foreground shadow-soft">
                   <motion.span
                     animate={{ opacity: [0.4, 1, 0.4] }}
                     transition={{ repeat: Infinity, duration: 1.5 }}
@@ -134,7 +134,7 @@ const CoachIA = () => {
                 onClick={() => setInput(action.label)}
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
-                className="pill flex items-center gap-2 px-4 py-2 bg-white/80 border border-border/40 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all shadow-soft"
+                className="pill flex items-center gap-2 px-4 py-2 bg-card/80 border border-border/40 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all shadow-soft"
               >
                 {action.icon}{action.label}
               </motion.button>
@@ -144,13 +144,13 @@ const CoachIA = () => {
 
         {/* Input */}
         <motion.div
-          className="border-t border-border/30 bg-white/80 backdrop-blur-sm p-4"
+          className="border-t border-border/30 bg-card/80 backdrop-blur-sm p-4 transition-colors duration-300"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.4 }}
         >
           <div className="max-w-4xl mx-auto flex gap-3">
-            <input type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && sendMessage()} placeholder="Demande à ton coach IA..." className="flex-1 px-5 py-3.5 rounded-2xl border border-border bg-white/90 text-sm text-foreground placeholder:text-muted-foreground shadow-inner-soft focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            <input type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && sendMessage()} placeholder="Demande à ton coach IA..." className="flex-1 px-5 py-3.5 rounded-2xl border border-border bg-card/90 text-sm text-foreground placeholder:text-muted-foreground shadow-inner-soft focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors duration-300" />
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}

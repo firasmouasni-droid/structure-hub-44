@@ -83,7 +83,7 @@ const Planning = () => {
           </div>
 
           {/* Tabs */}
-          <div className="flex items-center gap-1 p-1 bg-white/70 backdrop-blur-sm rounded-2xl shadow-soft w-fit">
+          <div className="flex items-center gap-1 p-1 bg-card/70 backdrop-blur-sm rounded-2xl shadow-soft w-fit">
             {TABS.map(tab => (
               <motion.button
                 key={tab.key}

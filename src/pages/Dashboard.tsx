@@ -84,7 +84,7 @@ const Dashboard = () => {
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                   <div className="flex items-center gap-3 sm:gap-4">
                     <motion.div
-                      className="w-12 h-12 sm:w-16 sm:h-16 rounded-3xl gradient-primary shadow-soft flex items-center justify-center text-primary-foreground font-bold text-lg sm:text-xl ring-4 ring-white/50"
+                      className="w-12 h-12 sm:w-16 sm:h-16 rounded-3xl gradient-primary shadow-soft flex items-center justify-center text-primary-foreground font-bold text-lg sm:text-xl ring-4 ring-card/50"
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
@@ -102,7 +102,7 @@ const Dashboard = () => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3, duration: 0.4 }}
                   >
-                    <div className="pill px-3 py-1.5 sm:px-4 sm:py-2 bg-white/70 backdrop-blur-sm shadow-soft flex items-center gap-1.5 sm:gap-2">
+                    <div className="pill px-3 py-1.5 sm:px-4 sm:py-2 bg-card/70 backdrop-blur-sm shadow-soft flex items-center gap-1.5 sm:gap-2">
                       <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-warning" />
                       <span className="text-xs sm:text-sm font-bold text-foreground">{streak}j</span>
                     </div>
@@ -119,7 +119,7 @@ const Dashboard = () => {
                   transition={{ delay: 0.4, duration: 0.4 }}
                 >
                   <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <input type="text" placeholder="Rechercher une tâche, structure, objectif..." className="w-full pl-12 pr-5 py-3.5 rounded-2xl bg-white/80 backdrop-blur-sm border border-white/50 shadow-soft text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                  <input type="text" placeholder="Rechercher une tâche, structure, objectif..." className="w-full pl-12 pr-5 py-3.5 rounded-2xl bg-card/80 backdrop-blur-sm border border-border/50 shadow-soft text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors duration-300" />
                 </motion.div>
               </div>
             </div>
@@ -200,7 +200,7 @@ const Dashboard = () => {
                         <div className="flex-1">
                           <p className="text-sm font-semibold">{slot.label}</p>
                         </div>
-                        <span className="text-xs font-medium pill px-3 py-1 bg-white/50">{slot.duration}</span>
+                        <span className="text-xs font-medium pill px-3 py-1 bg-card/50">{slot.duration}</span>
                       </div>
                     </StaggerItem>
                   ))}
