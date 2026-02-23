@@ -1,43 +1,52 @@
 import AppLayout from "@/components/layout/AppLayout";
 import { User, Bell, Palette } from "lucide-react";
+import { PageTransition, StaggerContainer, StaggerItem } from "@/components/motion/MotionWrappers";
 
 const SettingsPage = () => {
   return (
     <AppLayout>
-      <div className="p-6 lg:p-8 max-w-4xl mx-auto space-y-6 animate-fade-in">
-        <h1 className="text-2xl font-bold text-foreground">Paramètres</h1>
+      <PageTransition>
+        <div className="p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
+          <h1 className="text-2xl font-bold text-foreground">Paramètres</h1>
 
-        <div className="space-y-5">
-          <SettingSection icon={<User className="w-5 h-5 text-primary" />} title="Profil" description="Gérer votre nom, email et avatar">
-            <div className="space-y-4">
-              <div className="flex items-center gap-4 mb-2">
-                <div className="w-16 h-16 rounded-3xl gradient-primary flex items-center justify-center shadow-soft">
-                  <span className="text-primary-foreground text-xl font-bold">AM</span>
+          <StaggerContainer className="space-y-5">
+            <StaggerItem>
+              <SettingSection icon={<User className="w-5 h-5 text-primary" />} title="Profil" description="Gérer votre nom, email et avatar">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4 mb-2">
+                    <div className="w-16 h-16 rounded-3xl gradient-primary flex items-center justify-center shadow-soft">
+                      <span className="text-primary-foreground text-xl font-bold">AM</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">Alexandre Martin</p>
+                      <p className="text-xs text-muted-foreground">alexandre@company.com</p>
+                    </div>
+                  </div>
+                  <InputField label="Nom" value="Alexandre Martin" />
+                  <InputField label="Email" value="alexandre@company.com" />
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-foreground">Alexandre Martin</p>
-                  <p className="text-xs text-muted-foreground">alexandre@company.com</p>
+              </SettingSection>
+            </StaggerItem>
+
+            <StaggerItem>
+              <SettingSection icon={<Bell className="w-5 h-5 text-warning" />} title="Notifications" description="Configurer vos alertes et rappels">
+                <div className="space-y-4">
+                  <ToggleField label="Notifications push" defaultChecked />
+                  <ToggleField label="Rappels de tâches" defaultChecked />
+                  <ToggleField label="Résumé quotidien IA" defaultChecked />
+                  <ToggleField label="Alertes de surcharge" />
                 </div>
-              </div>
-              <InputField label="Nom" value="Alexandre Martin" />
-              <InputField label="Email" value="alexandre@company.com" />
-            </div>
-          </SettingSection>
+              </SettingSection>
+            </StaggerItem>
 
-          <SettingSection icon={<Bell className="w-5 h-5 text-warning" />} title="Notifications" description="Configurer vos alertes et rappels">
-            <div className="space-y-4">
-              <ToggleField label="Notifications push" defaultChecked />
-              <ToggleField label="Rappels de tâches" defaultChecked />
-              <ToggleField label="Résumé quotidien IA" defaultChecked />
-              <ToggleField label="Alertes de surcharge" />
-            </div>
-          </SettingSection>
-
-          <SettingSection icon={<Palette className="w-5 h-5 text-secondary" />} title="Apparence" description="Personnaliser l'interface">
-            <p className="text-sm text-muted-foreground">Mode Pastel Soft UI activé ✨</p>
-          </SettingSection>
+            <StaggerItem>
+              <SettingSection icon={<Palette className="w-5 h-5 text-secondary" />} title="Apparence" description="Personnaliser l'interface">
+                <p className="text-sm text-muted-foreground">Mode Pastel Soft UI activé ✨</p>
+              </SettingSection>
+            </StaggerItem>
+          </StaggerContainer>
         </div>
-      </div>
+      </PageTransition>
     </AppLayout>
   );
 };
