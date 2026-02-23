@@ -74,7 +74,7 @@ const ZONE_STYLES: Record<string, { bg: string; border: string }> = {
 const DAY_NAMES_SHORT = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
 // ── Day view (hourly grid) with drag-and-drop + category colors ──
-function DayView({ events, routineZones, onEventMove }: { events: CalendarEvent[]; routineZones: ReturnType<typeof getRoutineZones>; onEventMove?: (eventId: string, newHour: number) => void }) {
+function DayView({ events, routineZones, onEventMove, onTaskDrop }: { events: CalendarEvent[]; routineZones: ReturnType<typeof getRoutineZones>; onEventMove?: (eventId: string, newHour: number) => void; onTaskDrop?: (taskId: string, hour: number) => void }) {
   const [dragOverHour, setDragOverHour] = useState<number | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
 
@@ -89,14 +89,20 @@ function DayView({ events, routineZones, onEventMove }: { events: CalendarEvent[
 
   const handleDragStart = (e: React.DragEvent, eventId: string) => {
     e.dataTransfer.setData("text/plain", eventId);
+    e.dataTransfer.setData("drag-type", "event");
     e.dataTransfer.effectAllowed = "move";
     setDraggingId(eventId);
   };
 
   const handleDrop = (e: React.DragEvent, hour: number) => {
     e.preventDefault();
-    const eventId = e.dataTransfer.getData("text/plain");
-    if (eventId && onEventMove) onEventMove(eventId, hour);
+    const dragType = e.dataTransfer.getData("drag-type");
+    const id = e.dataTransfer.getData("text/plain");
+    if (dragType === "task" && id && onTaskDrop) {
+      onTaskDrop(id, hour);
+    } else if (id && onEventMove) {
+      onEventMove(id, hour);
+    }
     setDragOverHour(null);
     setDraggingId(null);
   };
@@ -319,6 +325,39 @@ const GlobalPlanning = () => {
     );
   }, [events, updateEvent]);
 
+  const handleTaskDrop = useCallback(async (taskId: string, hour: number) => {
+    const task = allTasks.find(t => t.id === taskId);
+    if (!task) return;
+    const targetDate = selectedDay || new Date();
+    const startTime = new Date(targetDate);
+    startTime.setUTCHours(hour, 0, 0, 0);
+    const durationMin = task.estimated_duration || 30;
+    const endTime = new Date(startTime.getTime() + durationMin * 60_000);
+    const category = (task as any).category || "admin";
+
+    try {
+      const { error } = await supabase.from("calendar_events").insert({
+        title: task.action_label,
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        structure_id: task.structure_id,
+        category,
+        source: "manual",
+        color: null,
+      });
+      if (error) throw error;
+
+      // Mark the task as planned by setting due_date
+      await supabase.from("tasks").update({ due_date: format(targetDate, "yyyy-MM-dd") }).eq("id", taskId);
+
+      qc.invalidateQueries({ queryKey: ["calendar_events"] });
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      toast.success(`"${task.action_label}" planifiée à ${hour}h00 !`);
+    } catch (e: any) {
+      toast.error("Erreur lors de la planification");
+    }
+  }, [allTasks, selectedDay, qc]);
+
   const handleAutoplan = async () => {
     setAutoplanning(true);
     try {
@@ -427,10 +466,10 @@ const GlobalPlanning = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <FadeInSection className="lg:col-span-3">
             {selectedDay ? (
-              <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} />
+              <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} />
             ) : (
               <>
-                {activeTab === "today" && <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} />}
+                {activeTab === "today" && <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} />}
                 {activeTab === "week" && <WeekView events={events} weekStart={startOfWeek(currentDate, { weekStartsOn: 1 })} onDayClick={handleDayClick} />}
                 {activeTab === "month" && <MonthView events={events} currentDate={currentDate} onDayClick={handleDayClick} />}
               </>
@@ -447,18 +486,31 @@ const GlobalPlanning = () => {
                     const cat = CATEGORIES[(task as any).category as TaskCategory] || CATEGORIES.admin;
                     const CatIcon = cat.icon;
                     return (
-                      <HoverCard key={task.id} className="p-3 rounded-2xl border border-dashed transition-all" style={{ borderColor: `${cat.colors.normal}30`, backgroundColor: `${cat.colors.light}12` }}>
+                      <div
+                        key={task.id}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData("text/plain", task.id);
+                          e.dataTransfer.setData("drag-type", "task");
+                          e.dataTransfer.effectAllowed = "copyMove";
+                        }}
+                        className="p-3 rounded-2xl border border-dashed transition-all cursor-grab active:cursor-grabbing hover:-translate-y-0.5 hover:shadow-md"
+                        style={{ borderColor: `${cat.colors.normal}30`, backgroundColor: `${cat.colors.light}12` }}
+                      >
                         <div className="flex items-center gap-2">
                           <CatIcon className="w-3.5 h-3.5 shrink-0" style={{ color: cat.colors.normal }} />
                           <p className="text-sm font-medium text-foreground truncate">{task.action_label}</p>
                         </div>
                         <div className="flex items-center gap-2 mt-1.5">
                           <span className="pill text-[10px] font-bold px-2 py-0.5" style={{ backgroundColor: `${cat.colors.light}50`, color: cat.colors.normal }}>{cat.label}</span>
+                          {task.estimated_duration && (
+                            <span className="text-[10px] text-muted-foreground">{task.estimated_duration} min</span>
+                          )}
                           {task.priority === "high" && (
                             <span className="pill text-[10px] font-bold px-2 py-0.5" style={{ backgroundColor: `${CATEGORIES.urgent.colors.light}50`, color: CATEGORIES.urgent.colors.normal }}>Prioritaire</span>
                           )}
                         </div>
-                      </HoverCard>
+                      </div>
                     );
                   })}
                 </div>
