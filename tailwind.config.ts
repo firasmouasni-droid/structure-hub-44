@@ -81,6 +81,7 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        surface: "hsl(var(--surface))",
       },
       boxShadow: {
         soft: "0 10px 30px rgba(0, 0, 0, 0.06)",

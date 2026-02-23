@@ -92,24 +92,24 @@ const Tasks = () => {
               <DialogContent className="rounded-3xl border-border/50">
                 <DialogHeader><DialogTitle className="text-lg font-bold">Nouvelle tâche</DialogTitle></DialogHeader>
                 <div className="space-y-3 mt-2">
-                  <input placeholder="Titre de la tâche" value={newTask.action_label} onChange={e => setNewTask(p => ({ ...p, action_label: e.target.value }))} className="w-full px-4 py-3 rounded-2xl border border-border bg-white/90 text-sm shadow-inner-soft focus:outline-none focus:ring-2 focus:ring-primary/30" />
-                  <select value={newTask.structure_id} onChange={e => setNewTask(p => ({ ...p, structure_id: e.target.value }))} className="w-full px-4 py-3 rounded-2xl border border-border bg-white/90 text-sm">
+                  <input placeholder="Titre de la tâche" value={newTask.action_label} onChange={e => setNewTask(p => ({ ...p, action_label: e.target.value }))} className="w-full px-4 py-3 rounded-2xl border border-border bg-card/90 text-sm shadow-inner-soft focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors duration-300" />
+                  <select value={newTask.structure_id} onChange={e => setNewTask(p => ({ ...p, structure_id: e.target.value }))} className="w-full px-4 py-3 rounded-2xl border border-border bg-card/90 text-sm transition-colors duration-300">
                     <option value="">Structure...</option>
                     {structures.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                   <div className="grid grid-cols-2 gap-3">
-                    <select value={newTask.action_type} onChange={e => setNewTask(p => ({ ...p, action_type: e.target.value }))} className="px-4 py-3 rounded-2xl border border-border bg-white/90 text-sm">
+                    <select value={newTask.action_type} onChange={e => setNewTask(p => ({ ...p, action_type: e.target.value }))} className="px-4 py-3 rounded-2xl border border-border bg-card/90 text-sm transition-colors duration-300">
                       {ACTION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
-                    <select value={newTask.priority} onChange={e => setNewTask(p => ({ ...p, priority: e.target.value }))} className="px-4 py-3 rounded-2xl border border-border bg-white/90 text-sm">
+                    <select value={newTask.priority} onChange={e => setNewTask(p => ({ ...p, priority: e.target.value }))} className="px-4 py-3 rounded-2xl border border-border bg-card/90 text-sm transition-colors duration-300">
                       <option value="low">Low</option>
                       <option value="medium">Medium</option>
                       <option value="high">High</option>
                     </select>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <input type="date" value={newTask.due_date} onChange={e => setNewTask(p => ({ ...p, due_date: e.target.value }))} className="px-4 py-3 rounded-2xl border border-border bg-white/90 text-sm" />
-                    <input type="number" placeholder="Durée (min)" value={newTask.estimated_duration} onChange={e => setNewTask(p => ({ ...p, estimated_duration: e.target.value }))} className="px-4 py-3 rounded-2xl border border-border bg-white/90 text-sm" />
+                    <input type="date" value={newTask.due_date} onChange={e => setNewTask(p => ({ ...p, due_date: e.target.value }))} className="px-4 py-3 rounded-2xl border border-border bg-card/90 text-sm transition-colors duration-300" />
+                    <input type="number" placeholder="Durée (min)" value={newTask.estimated_duration} onChange={e => setNewTask(p => ({ ...p, estimated_duration: e.target.value }))} className="px-4 py-3 rounded-2xl border border-border bg-card/90 text-sm transition-colors duration-300" />
                   </div>
                   <motion.button
                     whileHover={{ scale: 1.01 }}
@@ -127,7 +127,7 @@ const Tasks = () => {
 
           {/* Tabs */}
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1 p-1 bg-white/70 backdrop-blur-sm rounded-2xl shadow-soft">
+            <div className="flex items-center gap-1 p-1 bg-card/70 backdrop-blur-sm rounded-2xl shadow-soft">
               {TABS.map(tab => (
                 <motion.button
                   key={tab.key}
@@ -140,14 +140,14 @@ const Tasks = () => {
                 </motion.button>
               ))}
             </div>
-            <select value={structureFilter} onChange={e => setStructureFilter(e.target.value)} className="px-4 py-2 rounded-2xl border border-border bg-white/70 text-sm shadow-soft">
+            <select value={structureFilter} onChange={e => setStructureFilter(e.target.value)} className="px-4 py-2 rounded-2xl border border-border bg-card/70 text-sm shadow-soft transition-colors duration-300">
               <option value="all">Toutes structures</option>
               {structures.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
             <div className="flex-1" />
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher..." className="pl-10 pr-4 py-2 rounded-2xl border border-border bg-white/70 text-sm shadow-inner-soft focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher..." className="pl-10 pr-4 py-2 rounded-2xl border border-border bg-card/70 text-sm shadow-inner-soft focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors duration-300" />
             </div>
           </div>
 
