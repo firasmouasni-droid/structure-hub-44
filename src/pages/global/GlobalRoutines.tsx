@@ -1,9 +1,10 @@
 import { useRoutines, useCreateRoutine, useUpdateRoutine, ROUTINE_TEMPLATES, ORGANIZATION_MODES, type RoutineBlock } from "@/hooks/useRoutines";
-import { Clock, Save, Check, ChevronRight, Sparkles, BookOpen, Edit3, X } from "lucide-react";
+import { Clock, Save, Check, ChevronRight, Sparkles, BookOpen, Edit3, X, Wand2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { PageTransition, StaggerContainer, StaggerItem } from "@/components/motion/MotionWrappers";
 import { motion, AnimatePresence } from "framer-motion";
+import RoutineOnboarding from "@/components/onboarding/RoutineOnboarding";
 
 const BLOCK_COLORS: Record<string, string> = {
   deep_work: "bg-purple-500/20 border-purple-500/30 text-purple-300",
@@ -83,6 +84,7 @@ const GlobalRoutines = () => {
   const [editMode, setEditMode] = useState(false);
   const [editBlocks, setEditBlocks] = useState<RoutineBlock[]>([]);
   const [editEmailSlots, setEditEmailSlots] = useState("");
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
 
   useEffect(() => {
     if (activeRoutine?.routine_type && activeRoutine.routine_type !== "custom") {
@@ -149,7 +151,18 @@ const GlobalRoutines = () => {
               {activeRoutine?.name && <span className="ml-1 text-primary font-medium">· Active : {activeRoutine.name}</span>}
             </p>
           </div>
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => setOnboardingOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-2xl gradient-primary text-primary-foreground text-sm font-bold shadow-soft"
+          >
+            <Wand2 className="w-4 h-4" />
+            Quiz personnalité
+          </motion.button>
         </div>
+
+        <RoutineOnboarding open={onboardingOpen} onOpenChange={setOnboardingOpen} />
 
         {/* Routine catalog */}
         <div>
