@@ -165,14 +165,19 @@ const Home = () => {
             </div>
 
             {/* Phrase motivante */}
-            <p className="text-xs sm:text-sm text-muted-foreground italic mt-3">
+            <motion.p
+              className="text-xs sm:text-sm text-muted-foreground italic mt-3"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.5, ease: "easeOut" }}
+            >
               {(() => {
                 const hour = new Date().getHours();
                 if (hour < 12) return "☀️ Prêt à conquérir cette matinée ?";
                 if (hour < 17) return "🚀 L'après-midi est à toi, fonce !";
                 return "✨ Belle soirée pour faire le point";
               })()}
-            </p>
+            </motion.p>
 
             {/* Actions */}
             <div className="flex items-center gap-2 mt-3">
