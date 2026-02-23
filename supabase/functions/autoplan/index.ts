@@ -241,6 +241,11 @@ ${blockRulesText}
 ${taskTypeMapping}
 ${auditContext}
 
+HORAIRES DE TRAVAIL STRICTS (NE JAMAIS placer en dehors) :
+${WORK_BLOCKS.map(b => `- ${b.start}–${b.end}`).join("\n")}
+- PAUSE DÉJEUNER : 12:00–13:00 (aucune tâche ne doit être dans cette plage)
+- Toute tâche DOIT commencer ET finir ENTIÈREMENT dans l'une de ces plages
+
 RÈGLES CRITIQUES :
 1. CAPACITÉ MAX: ${maxCapacity} minutes (65% de ${totalFreeMinutes} min libres)
 2. NE JAMAIS chevaucher un événement existant
@@ -253,6 +258,9 @@ RÈGLES CRITIQUES :
 9. Les routines sont des PRÉFÉRENCES de placement, pas des blocages. Si un bloc deep_work est plein, place la tâche dans le créneau libre le plus proche, même s'il est de type admin
 10. AUCUN trou entre deux tâches adjacentes dans le même bloc — elles doivent être collées bout à bout
 11. Les seuls espaces vides autorisés sont les pauses de routine (type "break")
+12. AUCUNE tâche avant 09:00 ou après 18:00
+13. AUCUNE tâche pendant la pause 12:00–13:00
+14. Si une tâche ne rentre pas entièrement dans un bloc libre, la reporter (skipped)
 
 Réponds via l'outil plan_tasks. Pour chaque tâche, indique dans quel bloc de routine elle a été placée.`
           },
@@ -319,13 +327,56 @@ Tâches à placer (triées par priorité): ${JSON.stringify(correctedTasks)}
       });
     }
 
-    const result = JSON.parse(toolCall.function.arguments);
     const { planned, capacity_used, capacity_remaining, skipped_count, placement_summary } = result;
+    let actuallyPlanned = 0;
 
-    // Create calendar events for placed tasks
+    // Work hours config (must match frontend)
+    const WORK_BLOCKS_CONFIG = [
+      { startHour: 9, startMin: 0, endHour: 12, endMin: 0 },
+      { startHour: 13, startMin: 0, endHour: 18, endMin: 0 },
+    ];
+
+    function isWithinWorkHoursServer(startIso: string, endIso: string): boolean {
+      const s = new Date(startIso);
+      const e = new Date(endIso);
+      const sMin = s.getHours() * 60 + s.getMinutes();
+      const eMin = e.getHours() * 60 + e.getMinutes();
+      return WORK_BLOCKS_CONFIG.some(b => {
+        const bStart = b.startHour * 60 + b.startMin;
+        const bEnd = b.endHour * 60 + b.endMin;
+        return sMin >= bStart && eMin <= bEnd;
+      });
+    }
+
+    function hasCollisionServer(startIso: string, endIso: string, allEvents: { start_time: string; end_time: string }[]): boolean {
+      const sMin = (() => { const d = new Date(startIso); return d.getHours() * 60 + d.getMinutes(); })();
+      const eMin = (() => { const d = new Date(endIso); return d.getHours() * 60 + d.getMinutes(); })();
+      return allEvents.some(ev => {
+        const evS = (() => { const d = new Date(ev.start_time); return d.getHours() * 60 + d.getMinutes(); })();
+        const evE = (() => { const d = new Date(ev.end_time); return d.getHours() * 60 + d.getMinutes(); })();
+        return sMin < evE && eMin > evS;
+      });
+    }
+
+    // Track all events (existing + newly created) for collision detection
+    const allPlacedEvents: { start_time: string; end_time: string }[] = [...(events || [])];
+
+    // Create calendar events for placed tasks — with server-side validation
     for (const item of planned) {
       const task = tasks?.find(t => t.id === item.task_id);
       if (!task) continue;
+
+      // Validate work hours
+      if (!isWithinWorkHoursServer(item.start_time, item.end_time)) {
+        console.warn(`Skipping task "${task.action_label}": outside work hours`);
+        continue;
+      }
+
+      // Validate no collision
+      if (hasCollisionServer(item.start_time, item.end_time, allPlacedEvents)) {
+        console.warn(`Skipping task "${task.action_label}": collision detected`);
+        continue;
+      }
 
       const colorMap: Record<string, string> = {
         deep_work: "#6366F1",
@@ -335,7 +386,6 @@ Tâches à placer (triées par priorité): ${JSON.stringify(correctedTasks)}
         other: "#64748B",
       };
 
-      // Map action_type to category
       const categoryMap: Record<string, string> = {
         WRITE: "focus", BUILD: "focus", LEARN: "focus",
         MEETING: "meetings",
@@ -354,15 +404,19 @@ Tâches à placer (triées par priorité): ${JSON.stringify(correctedTasks)}
         category,
       });
 
+      // Track this newly placed event for future collision checks
+      allPlacedEvents.push({ start_time: item.start_time, end_time: item.end_time });
+
       await supabase.from("tasks").update({ due_date: today }).eq("id", task.id);
+      actuallyPlanned++;
     }
 
     return new Response(JSON.stringify({
-      planned: planned.length,
+      planned: actuallyPlanned,
       items: planned,
       capacity_used,
       capacity_remaining,
-      skipped_count,
+      skipped_count: skipped_count + (planned.length - actuallyPlanned),
       max_capacity: maxCapacity,
       routine_used: routineName,
       routine_type: routineType,
