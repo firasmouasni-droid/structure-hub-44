@@ -12,6 +12,7 @@ import { useState } from "react";
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard, FadeInSection } from "@/components/motion/MotionWrappers";
 import { motion } from "framer-motion";
 import MorningAuditDialog from "@/components/audit/MorningAuditDialog";
+import WeeklyTrendsChart from "@/components/audit/WeeklyTrendsChart";
 import { useTodayAudit } from "@/hooks/useDailyAudit";
 
 const LifeHQ = () => {
@@ -267,6 +268,11 @@ const LifeHQ = () => {
               })}
             </div>
           </div>
+        </FadeInSection>
+
+        {/* Weekly Trends */}
+        <FadeInSection delay={0.2}>
+          <WeeklyTrendsChart />
         </FadeInSection>
 
         {/* Gamification */}
