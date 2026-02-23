@@ -96,6 +96,25 @@ export function useUpdateCalendarEvent() {
   });
 }
 
+export function useUpdateCalendarEventDetails() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, title, category }: { id: string; title: string; category: string }) => {
+      const { data, error } = await supabase
+        .from("calendar_events")
+        .update({ title, category })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["calendar_events"] });
+    },
+  });
+}
+
 export function useDeleteCalendarEvent() {
   const qc = useQueryClient();
   return useMutation({
