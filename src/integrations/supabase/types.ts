@@ -541,6 +541,39 @@ export type Database = {
         }
         Relationships: []
       }
+      work_hours_settings: {
+        Row: {
+          created_at: string
+          id: string
+          pause_end: string
+          pause_start: string
+          updated_at: string
+          user_id: string | null
+          work_end: string
+          work_start: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pause_end?: string
+          pause_start?: string
+          updated_at?: string
+          user_id?: string | null
+          work_end?: string
+          work_start?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pause_end?: string
+          pause_start?: string
+          updated_at?: string
+          user_id?: string | null
+          work_end?: string
+          work_start?: string
+        }
+        Relationships: []
+      }
       xp_events: {
         Row: {
           created_at: string
