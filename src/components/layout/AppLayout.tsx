@@ -1,5 +1,6 @@
 import { ReactNode, useState } from "react";
 import { Sidebar } from "./Sidebar";
+import { BottomNav } from "./BottomNav";
 import { Menu } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -57,8 +58,12 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             <span className="text-sm font-bold text-foreground">Second Cerveau</span>
           </div>
         </div>
-        {children}
+        <div className="pb-20 lg:pb-0">
+          {children}
+        </div>
       </main>
+
+      <BottomNav />
     </div>
   );
 };
