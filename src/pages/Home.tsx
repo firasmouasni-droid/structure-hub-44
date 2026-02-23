@@ -194,31 +194,29 @@ const Home = () => {
             </motion.p>
 
             {/* Actions */}
-            <div className="flex items-center justify-center gap-4 mt-3">
-              {[
-                <motion.button
-                  key="checkin"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.7 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setAuditOpen(true)}
-                  className="pill px-3 py-2 bg-card/70 backdrop-blur-sm shadow-soft flex items-center gap-2 cursor-pointer hover:bg-primary/10 transition-all"
-                >
-                  <Sun className="w-4 h-4 text-warning" />
-                  <span className="text-xs font-bold text-foreground hidden sm:inline">Check-in</span>
-                </motion.button>,
+            <div className="flex items-center justify-between mt-3">
+              <motion.button
+                key="checkin"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.7 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setAuditOpen(true)}
+                className="pill px-3 py-2 bg-card/70 backdrop-blur-sm shadow-soft flex items-center gap-2 cursor-pointer hover:bg-primary/10 transition-all"
+              >
+                <Sun className="w-4 h-4 text-warning" />
+                <span className="text-xs font-bold text-foreground hidden sm:inline">Check-in</span>
+              </motion.button>
+              <div className="flex items-center gap-3">
                 <motion.div
-                  key="theme"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: 0.85 }}
                 >
                   <ThemeToggle />
-                </motion.div>,
+                </motion.div>
                 <motion.button
-                  key="logout"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: 1.0 }}
@@ -229,8 +227,8 @@ const Home = () => {
                   title="Se déconnecter"
                 >
                   <LogOut className="w-4 h-4 text-muted-foreground" />
-                </motion.button>,
-              ]}
+                </motion.button>
+              </div>
             </div>
           </motion.div>
 
