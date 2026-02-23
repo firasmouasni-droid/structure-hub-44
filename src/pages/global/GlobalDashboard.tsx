@@ -4,6 +4,7 @@ import { useGoals } from "@/hooks/useGoals";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { useUserStats, useIncrementXP } from "@/hooks/useUserStats";
 import { useRoutines } from "@/hooks/useRoutines";
+import { useLifeSpaces } from "@/hooks/useLifeSpaces";
 import { CheckCircle2, Clock, TrendingUp, Target, Flame, Zap, Bot, ArrowRight, Sparkles, CalendarDays, AlertTriangle, Compass } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
@@ -19,6 +20,7 @@ import GuidedDayDialog from "@/components/guided/GuidedDayDialog";
 const GlobalDashboard = () => {
   const { data: tasks = [] } = useTasks();
   const { data: structures = [] } = useStructures();
+  const { data: lifeSpaces = [] } = useLifeSpaces();
   const { data: goals = [] } = useGoals();
   const { data: stats } = useUserStats();
   const { data: routines = [] } = useRoutines();
@@ -78,7 +80,7 @@ const GlobalDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-foreground">QG Général</h1>
-                <p className="text-sm text-muted-foreground capitalize">{format(new Date(), "EEEE d MMMM", { locale: fr })}</p>
+                <p className="text-sm text-muted-foreground">Vue globale de ta vie · <span className="capitalize">{format(new Date(), "EEEE d MMMM", { locale: fr })}</span></p>
               </div>
               <div className="hidden sm:flex items-center gap-2">
                 <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setGuidedOpen(true)} className="pill px-3 py-1.5 bg-card/70 backdrop-blur-sm shadow-soft flex items-center gap-1.5 cursor-pointer hover:bg-primary/10 transition-all">
@@ -175,19 +177,41 @@ const GlobalDashboard = () => {
               {/* Structures load */}
               <FadeInSection delay={0.15}>
                 <div className="card-soft p-6">
-                  <h2 className="text-base font-bold text-foreground mb-5">Charge par espace</h2>
+                  <h2 className="text-base font-bold text-foreground mb-5">Charge par espace de vie</h2>
                   <div className="space-y-3">
-                    {structureLoad.map(s => (
-                      <Link key={s.id} to={`/structures/${s.id}/dashboard`} className="flex items-center gap-3 group">
-                        <div className={`w-3 h-3 rounded-full ${s.color} shrink-0`} />
-                        <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors flex-1">{s.name}</span>
-                        <span className="text-xs font-bold text-muted-foreground">{s.count} tâches</span>
-                        <div className="w-20 h-2 bg-muted rounded-pill overflow-hidden">
-                          <div className="h-full gradient-primary rounded-pill" style={{ width: `${Math.min(s.count * 10, 100)}%` }} />
-                        </div>
-                      </Link>
-                    ))}
-                    {structureLoad.length === 0 && <p className="text-sm text-muted-foreground text-center">Aucun espace créé</p>}
+                    {lifeSpaces.filter(ls => ls.enabled).map(ls => {
+                      const spaceStructures = structures.filter(s => s.life_space_id === ls.id);
+                      const spaceTaskCount = tasks.filter(t => spaceStructures.some(s => s.id === t.structure_id) && t.status !== "done").length;
+                      return (
+                        <Link key={ls.id} to={`/spaces/${ls.key}`} className="flex items-center gap-3 group">
+                          <span className="text-lg shrink-0">{ls.icon}</span>
+                          <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors flex-1">{ls.label}</span>
+                          <span className="text-xs font-bold text-muted-foreground">{spaceTaskCount} tâches</span>
+                          <div className="w-20 h-2 bg-muted rounded-pill overflow-hidden">
+                            <div className="h-full gradient-primary rounded-pill" style={{ width: `${Math.min(spaceTaskCount * 10, 100)}%` }} />
+                          </div>
+                        </Link>
+                      );
+                    })}
+                    {structureLoad.length > 0 && (
+                      <>
+                        <div className="border-t border-border/50 my-2" />
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Par structure</p>
+                        {structureLoad.map(s => (
+                          <Link key={s.id} to={`/structures/${s.id}/dashboard`} className="flex items-center gap-3 group">
+                            <div className={`w-3 h-3 rounded-full ${s.color} shrink-0`} />
+                            <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors flex-1">{s.name}</span>
+                            <span className="text-xs font-bold text-muted-foreground">{s.count} tâches</span>
+                            <div className="w-20 h-2 bg-muted rounded-pill overflow-hidden">
+                              <div className="h-full gradient-primary rounded-pill" style={{ width: `${Math.min(s.count * 10, 100)}%` }} />
+                            </div>
+                          </Link>
+                        ))}
+                      </>
+                    )}
+                    {lifeSpaces.filter(ls => ls.enabled).length === 0 && structureLoad.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center">Aucun espace créé</p>
+                    )}
                   </div>
                 </div>
               </FadeInSection>

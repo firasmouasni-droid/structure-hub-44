@@ -1,6 +1,6 @@
 import { useStructures, useCreateStructure } from "@/hooks/useStructures";
 import { useLifeSpaces } from "@/hooks/useLifeSpaces";
-import { Plus, Brain, ArrowRight, CheckSquare, Inbox, Calendar, Bot, Target, Clock, Lock } from "lucide-react";
+import { Plus, Brain, ArrowRight, CheckSquare, Inbox, Calendar, Bot, Target, Clock, Lock, Sun } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -11,6 +11,9 @@ import { useUserStats } from "@/hooks/useUserStats";
 import { useTasks } from "@/hooks/useTasks";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import WelcomeOnboarding from "@/components/onboarding/WelcomeOnboarding";
+import MorningAuditDialog from "@/components/audit/MorningAuditDialog";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 const COLORS = [
   { label: "Lavande", value: "bg-primary" },
@@ -30,6 +33,7 @@ const Home = () => {
   const [newStructure, setNewStructure] = useState({ name: "", color: "bg-primary", description: "" });
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [onboardingDismissed, setOnboardingDismissed] = useState(false);
+  const [auditOpen, setAuditOpen] = useState(false);
 
   const isLoading = structuresLoading || spacesLoading;
 
@@ -58,19 +62,40 @@ const Home = () => {
     <div className="min-h-screen bg-background">
       <PageTransition>
         <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
-          {/* Header */}
-          <motion.div className="relative overflow-hidden rounded-3xl gradient-header p-8" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          {/* ── Header utilisateur ── */}
+          <motion.div
+            className="relative overflow-hidden rounded-3xl gradient-header p-8"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <motion.div className="w-16 h-16 rounded-3xl gradient-primary shadow-soft flex items-center justify-center" initial={{ scale: 0, rotate: -180 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}>
+                <motion.div
+                  className="w-16 h-16 rounded-3xl gradient-primary shadow-soft flex items-center justify-center"
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
+                >
                   <Brain className="w-8 h-8 text-primary-foreground" />
                 </motion.div>
                 <div>
-                  <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Mon Life OS</h1>
-                  <p className="text-sm text-muted-foreground mt-0.5">Pilote ta vie, un espace à la fois</p>
+                  <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Bonjour 👋</h1>
+                  <p className="text-sm text-muted-foreground mt-0.5 capitalize">
+                    {format(new Date(), "EEEE d MMMM", { locale: fr })} · Pilote ta vie, un espace à la fois
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setAuditOpen(true)}
+                  className="pill px-4 py-2 bg-card/70 backdrop-blur-sm shadow-soft flex items-center gap-2 cursor-pointer hover:bg-primary/10 transition-all"
+                >
+                  <Sun className="w-4 h-4 text-warning" />
+                  <span className="text-xs font-bold text-foreground hidden sm:inline">Check-in</span>
+                </motion.button>
                 <div className="pill px-4 py-2 bg-card/70 backdrop-blur-sm shadow-soft flex items-center gap-2">
                   <span className="text-xs font-bold text-foreground">⭐ Niv. {level}</span>
                   <span className="text-xs text-muted-foreground">{xp} XP</span>
@@ -85,7 +110,7 @@ const Home = () => {
             </div>
           </motion.div>
 
-          {/* Quick Access - Global HQ */}
+          {/* ── QG Général + raccourcis globaux ── */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="space-y-4">
             <Link to="/global/dashboard">
               <HoverCard className="card-soft p-6 group cursor-pointer border-2 border-primary/20 hover:border-primary/40 transition-all">
@@ -106,26 +131,27 @@ const Home = () => {
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               {[
-                { label: "Tâches", icon: CheckSquare, path: "/global/tasks", color: "bg-primary/10 text-primary" },
-                { label: "Inbox IA", icon: Inbox, path: "/global/inbox", color: "bg-secondary/15 text-secondary-foreground" },
-                { label: "Planning", icon: Calendar, path: "/global/planning", color: "bg-accent/15 text-accent" },
-                { label: "Objectifs", icon: Target, path: "/global/objectives", color: "bg-success/15 text-success-foreground" },
-                { label: "Routines", icon: Clock, path: "/global/routines", color: "bg-warning/15 text-warning-foreground" },
-                { label: "Coach IA", icon: Bot, path: "/global/coach", color: "bg-primary/10 text-primary" },
+                { label: "Tâches", sub: "Tous espaces", icon: CheckSquare, path: "/global/tasks", color: "bg-primary/10 text-primary" },
+                { label: "Inbox IA", sub: "Suggestions à traiter", icon: Inbox, path: "/global/inbox", color: "bg-secondary/15 text-secondary-foreground" },
+                { label: "Planning", sub: "Planning global", icon: Calendar, path: "/global/planning", color: "bg-accent/15 text-accent" },
+                { label: "Objectifs", sub: "Objectifs de vie", icon: Target, path: "/global/objectives", color: "bg-success/15 text-success-foreground" },
+                { label: "Routines", sub: "Habitudes globales", icon: Clock, path: "/global/routines", color: "bg-warning/15 text-warning-foreground" },
+                { label: "Coach IA", sub: "Conseils personnalisés", icon: Bot, path: "/global/coach", color: "bg-primary/10 text-primary" },
               ].map((item) => (
                 <Link key={item.path} to={item.path}>
-                  <motion.div whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.97 }} className="card-soft p-4 flex flex-col items-center gap-2 cursor-pointer hover:shadow-md transition-shadow">
+                  <motion.div whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.97 }} className="card-soft p-4 flex flex-col items-center gap-1.5 cursor-pointer hover:shadow-md transition-shadow text-center">
                     <div className={`w-10 h-10 rounded-2xl ${item.color} flex items-center justify-center`}>
                       <item.icon className="w-5 h-5" />
                     </div>
                     <span className="text-xs font-semibold text-foreground">{item.label}</span>
+                    <span className="text-[10px] text-muted-foreground leading-tight">{item.sub}</span>
                   </motion.div>
                 </Link>
               ))}
             </div>
           </motion.div>
 
-          {/* Life Spaces - Active */}
+          {/* ── Espaces de vie actifs ── */}
           <div className="space-y-4">
             <h2 className="text-lg font-bold text-foreground">Espaces de vie</h2>
             <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -158,7 +184,7 @@ const Home = () => {
             </StaggerContainer>
           </div>
 
-          {/* Life Spaces - Coming Soon */}
+          {/* ── Espaces Coming Soon ── */}
           {disabledSpaces.length > 0 && (
             <div className="space-y-4">
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Bientôt disponibles</h2>
@@ -173,6 +199,7 @@ const Home = () => {
                         <span className="text-xl">{space.icon}</span>
                       </div>
                       <span className="text-xs font-semibold text-foreground text-center">{space.label}</span>
+                      <span className="text-[10px] text-muted-foreground">Bientôt disponible</span>
                       <div className="absolute top-2 right-2">
                         <Lock className="w-3 h-3 text-muted-foreground" />
                       </div>
@@ -183,7 +210,7 @@ const Home = () => {
             </div>
           )}
 
-          {/* Structures (sub-spaces) */}
+          {/* ── Structures ── */}
           {structures.length > 0 && (
             <div>
               <h2 className="text-lg font-bold text-foreground mb-4">Structures</h2>
@@ -298,6 +325,11 @@ const Home = () => {
           setOnboardingOpen(open);
           if (!open) setOnboardingDismissed(true);
         }}
+      />
+
+      <MorningAuditDialog
+        open={auditOpen}
+        onOpenChange={setAuditOpen}
       />
     </div>
   );
