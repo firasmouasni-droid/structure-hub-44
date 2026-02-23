@@ -161,7 +161,7 @@ const Home = () => {
               })}
 
               <StaggerItem>
-                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (open) { setOnboardingOpen(false); setOnboardingDismissed(true); } }}>
                   <DialogTrigger asChild>
                     <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="card-soft p-6 border-2 border-dashed border-border hover:border-primary/40 cursor-pointer flex flex-col items-center justify-center min-h-[180px] transition-all">
                       <div className="w-14 h-14 rounded-3xl bg-muted flex items-center justify-center mb-3"><Plus className="w-7 h-7 text-muted-foreground" /></div>
