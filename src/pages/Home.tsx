@@ -1,0 +1,203 @@
+import { useStructures, useCreateStructure } from "@/hooks/useStructures";
+import { Plus, Brain } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/motion/MotionWrappers";
+import { motion } from "framer-motion";
+import { useUserStats } from "@/hooks/useUserStats";
+import { useTasks } from "@/hooks/useTasks";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
+
+const COLORS = [
+  { label: "Lavande", value: "bg-primary" },
+  { label: "Rose", value: "bg-secondary" },
+  { label: "Bleu", value: "bg-accent" },
+  { label: "Vert", value: "bg-success" },
+  { label: "Orange", value: "bg-warning" },
+];
+
+const Home = () => {
+  const { data: structures = [], isLoading } = useStructures();
+  const { data: stats } = useUserStats();
+  const { data: allTasks = [] } = useTasks({ isInbox: false });
+  const createStructure = useCreateStructure();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [newStructure, setNewStructure] = useState({ name: "", color: "bg-primary", description: "" });
+
+  const handleCreate = async () => {
+    if (!newStructure.name.trim()) { toast.error("Donne un nom à ta structure"); return; }
+    await createStructure.mutateAsync(newStructure);
+    setDialogOpen(false);
+    setNewStructure({ name: "", color: "bg-primary", description: "" });
+    toast.success("Structure créée !");
+  };
+
+  const level = stats?.level ?? 1;
+  const xp = stats?.xp ?? 0;
+  const streak = stats?.streak_days ?? 0;
+
+  return (
+    <div className="min-h-screen bg-background">
+      <PageTransition>
+        <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
+          {/* Header */}
+          <motion.div
+            className="relative overflow-hidden rounded-3xl gradient-header p-8"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <motion.div
+                  className="w-16 h-16 rounded-3xl gradient-primary shadow-soft flex items-center justify-center"
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
+                >
+                  <Brain className="w-8 h-8 text-primary-foreground" />
+                </motion.div>
+                <div>
+                  <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Second Cerveau</h1>
+                  <p className="text-sm text-muted-foreground mt-0.5">Choisis un espace de travail</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="pill px-4 py-2 bg-card/70 backdrop-blur-sm shadow-soft flex items-center gap-2">
+                  <span className="text-xs font-bold text-foreground">⭐ Niv. {level}</span>
+                  <span className="text-xs text-muted-foreground">{xp} XP</span>
+                </div>
+                {streak > 0 && (
+                  <div className="pill px-4 py-2 bg-card/70 backdrop-blur-sm shadow-soft">
+                    <span className="text-xs font-bold text-foreground">🔥 {streak}j</span>
+                  </div>
+                )}
+                <ThemeToggle />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Structure Cards */}
+          <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {structures.map((s) => {
+              const taskCount = allTasks.filter(t => t.structure_id === s.id).length;
+              const doneCount = allTasks.filter(t => t.structure_id === s.id && t.status === "done").length;
+              const progress = taskCount > 0 ? Math.round((doneCount / taskCount) * 100) : 0;
+              return (
+                <StaggerItem key={s.id}>
+                  <Link to={`/structures/${s.id}/dashboard`}>
+                    <HoverCard className="card-soft p-6 group cursor-pointer">
+                      <div className="flex items-center gap-4 mb-4">
+                        <motion.div
+                          className={`w-14 h-14 rounded-3xl ${s.color} flex items-center justify-center shadow-soft`}
+                          whileHover={{ scale: 1.1, rotate: 5 }}
+                        >
+                          <span className="text-white text-xl font-bold">{s.name.charAt(0)}</span>
+                        </motion.div>
+                        <div>
+                          <h2 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">{s.name}</h2>
+                          {s.description && <p className="text-xs text-muted-foreground line-clamp-1">{s.description}</p>}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">{taskCount} tâches · {doneCount} faites</span>
+                          <span className="font-bold text-foreground">{progress}%</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-pill overflow-hidden">
+                          <motion.div
+                            className="h-full gradient-primary rounded-pill"
+                            initial={{ width: 0 }}
+                            whileInView={{ width: `${progress}%` }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.8, ease: "easeOut" }}
+                          />
+                        </div>
+                      </div>
+                    </HoverCard>
+                  </Link>
+                </StaggerItem>
+              );
+            })}
+
+            {/* Add Structure Card */}
+            <StaggerItem>
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="card-soft p-6 border-2 border-dashed border-border hover:border-primary/40 cursor-pointer flex flex-col items-center justify-center min-h-[180px] transition-all"
+                  >
+                    <div className="w-14 h-14 rounded-3xl bg-muted flex items-center justify-center mb-3">
+                      <Plus className="w-7 h-7 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm font-semibold text-muted-foreground">Ajouter un espace</p>
+                  </motion.div>
+                </DialogTrigger>
+                <DialogContent className="rounded-3xl border-border/50">
+                  <DialogHeader>
+                    <DialogTitle className="text-lg font-bold">Nouvel espace de travail</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 mt-2">
+                    <input
+                      placeholder="Nom de l'espace (ex: Académia, Side Project...)"
+                      value={newStructure.name}
+                      onChange={e => setNewStructure(p => ({ ...p, name: e.target.value }))}
+                      className="w-full px-4 py-3 rounded-2xl border border-border bg-card/90 text-sm shadow-inner-soft focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors duration-300"
+                    />
+                    <textarea
+                      placeholder="Description (optionnel)"
+                      value={newStructure.description}
+                      onChange={e => setNewStructure(p => ({ ...p, description: e.target.value }))}
+                      rows={2}
+                      className="w-full px-4 py-3 rounded-2xl border border-border bg-card/90 text-sm shadow-inner-soft focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors duration-300 resize-none"
+                    />
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground mb-2">Couleur</p>
+                      <div className="flex gap-2">
+                        {COLORS.map(c => (
+                          <motion.button
+                            key={c.value}
+                            whileHover={{ scale: 1.15 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => setNewStructure(p => ({ ...p, color: c.value }))}
+                            className={`w-10 h-10 rounded-2xl ${c.value} ${newStructure.color === c.value ? "ring-3 ring-foreground/30 ring-offset-2 ring-offset-background" : ""} transition-all`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <motion.button
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleCreate}
+                      disabled={createStructure.isPending}
+                      className="w-full py-3 rounded-2xl gradient-primary text-primary-foreground text-sm font-bold shadow-soft"
+                    >
+                      {createStructure.isPending ? "Création..." : "Créer l'espace"}
+                    </motion.button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </StaggerItem>
+          </StaggerContainer>
+
+          {isLoading && (
+            <p className="text-sm text-muted-foreground text-center py-8">Chargement...</p>
+          )}
+
+          {/* Settings link */}
+          <div className="flex justify-center">
+            <Link to="/settings" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              ⚙️ Paramètres
+            </Link>
+          </div>
+        </div>
+      </PageTransition>
+    </div>
+  );
+};
+
+export default Home;
