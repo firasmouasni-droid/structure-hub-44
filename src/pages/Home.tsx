@@ -1,8 +1,8 @@
 import { useStructures, useCreateStructure } from "@/hooks/useStructures";
 import { useLifeSpaces } from "@/hooks/useLifeSpaces";
-import { Plus, Brain, ArrowRight, CheckSquare, Calendar, Bot, Lock, Sun, CalendarDays, AlertTriangle, Circle, CheckCircle2, LogOut, User } from "lucide-react";
+import { Plus, Brain, ArrowRight, CheckSquare, Calendar, Bot, Lock, Sun, CalendarDays, AlertTriangle, Circle, CheckCircle2, LogOut, User, Settings } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/motion/MotionWrappers";
@@ -59,6 +59,7 @@ const Home = () => {
     .slice(0, 3);
   const createStructure = useCreateStructure();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [newStructure, setNewStructure] = useState({ name: "", color: "bg-primary", description: "" });
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [onboardingDismissed, setOnboardingDismissed] = useState(false);
@@ -99,23 +100,60 @@ const Home = () => {
           >
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                <motion.button
-                  onClick={() => navigate("/profile")}
-                  className="w-12 h-12 sm:w-16 sm:h-16 rounded-3xl overflow-hidden shadow-soft shrink-0 cursor-pointer border-2 border-primary/20 hover:border-primary/50 transition-colors"
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  {profile?.avatar_url ? (
-                    <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full gradient-primary flex items-center justify-center">
-                      <User className="w-6 h-6 sm:w-8 sm:h-8 text-primary-foreground" />
-                    </div>
-                  )}
-                </motion.button>
+                <div className="relative shrink-0">
+                  <motion.button
+                    onClick={() => setAvatarMenuOpen(prev => !prev)}
+                    className="w-12 h-12 sm:w-16 sm:h-16 rounded-3xl overflow-hidden shadow-soft cursor-pointer border-2 border-primary/20 hover:border-primary/50 transition-colors"
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full gradient-primary flex items-center justify-center">
+                        <User className="w-6 h-6 sm:w-8 sm:h-8 text-primary-foreground" />
+                      </div>
+                    )}
+                  </motion.button>
+
+                  <AnimatePresence>
+                    {avatarMenuOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setAvatarMenuOpen(false)} />
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9, y: -5 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.9, y: -5 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute top-full left-0 mt-2 z-50 w-48 bg-card border border-border rounded-2xl shadow-lg overflow-hidden"
+                        >
+                          <button
+                            onClick={() => { setAvatarMenuOpen(false); navigate("/profile"); }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted/60 transition-colors"
+                          >
+                            <User className="w-4 h-4" /> Profil
+                          </button>
+                          <button
+                            onClick={() => { setAvatarMenuOpen(false); navigate("/settings"); }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted/60 transition-colors"
+                          >
+                            <Settings className="w-4 h-4" /> Paramètres
+                          </button>
+                          <div className="h-px bg-border" />
+                          <button
+                            onClick={() => { setAvatarMenuOpen(false); signOut(); }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                          >
+                            <LogOut className="w-4 h-4" /> Déconnexion
+                          </button>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
                 <div className="min-w-0">
                   <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">
                     Hello, {profile?.display_name || "toi"} 👋
