@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.goal-decompose]
 verify_jwt = false
+
+[functions.analytics-insights]
+verify_jwt = false
