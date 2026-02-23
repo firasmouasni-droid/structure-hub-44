@@ -86,7 +86,7 @@ function DayView({ events, routineZones }: { events: CalendarEvent[]; routineZon
 }
 
 // ── Week view ──
-function WeekView({ events, weekStart }: { events: CalendarEvent[]; weekStart: Date }) {
+function WeekView({ events, weekStart, onDayClick }: { events: CalendarEvent[]; weekStart: Date; onDayClick?: (date: Date) => void }) {
   const days = eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 6) });
 
   const eventsByDay = useMemo(() => {
@@ -107,7 +107,7 @@ function WeekView({ events, weekStart }: { events: CalendarEvent[]; weekStart: D
           const dayEvents = eventsByDay[key] || [];
           const todayClass = isToday(day) ? "bg-primary/5" : "";
           return (
-            <div key={key} className={`min-h-[200px] p-2 ${todayClass}`}>
+            <div key={key} className={`min-h-[200px] p-2 cursor-pointer hover:bg-primary/5 transition-colors ${todayClass}`} onClick={() => onDayClick?.(day)}>
               <div className="text-center mb-2">
                 <p className="text-[11px] text-muted-foreground font-medium">{format(day, "EEE", { locale: fr })}</p>
                 <p className={`text-sm font-bold ${isToday(day) ? "text-primary" : "text-foreground"}`}>{format(day, "d")}</p>
@@ -134,7 +134,7 @@ function WeekView({ events, weekStart }: { events: CalendarEvent[]; weekStart: D
 }
 
 // ── Month view ──
-function MonthView({ events, currentDate }: { events: CalendarEvent[]; currentDate: Date }) {
+function MonthView({ events, currentDate, onDayClick }: { events: CalendarEvent[]; currentDate: Date; onDayClick?: (date: Date) => void }) {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const calStart = startOfWeek(monthStart, { weekStartsOn: 1 });
@@ -164,7 +164,7 @@ function MonthView({ events, currentDate }: { events: CalendarEvent[]; currentDa
           const dayEvents = eventsByDay[key] || [];
           const isCurrentMonth = day.getMonth() === currentDate.getMonth();
           return (
-            <div key={key} className={`min-h-[80px] p-1 border-b border-border/10 ${isToday(day) ? "bg-primary/5" : ""} ${!isCurrentMonth ? "opacity-40" : ""}`}>
+            <div key={key} className={`min-h-[80px] p-1 border-b border-border/10 cursor-pointer hover:bg-primary/5 transition-colors ${isToday(day) ? "bg-primary/5" : ""} ${!isCurrentMonth ? "opacity-40" : ""}`} onClick={() => onDayClick?.(day)}>
               <p className={`text-[11px] font-bold mb-0.5 ${isToday(day) ? "text-primary" : "text-foreground"}`}>{format(day, "d")}</p>
               {dayEvents.slice(0, 3).map((event, i) => (
                 <div key={i} className="rounded px-1 py-0.5 mb-0.5 bg-primary/10 text-primary truncate">
@@ -184,14 +184,18 @@ function MonthView({ events, currentDate }: { events: CalendarEvent[]; currentDa
 const GlobalPlanning = () => {
   const [activeTab, setActiveTab] = useState("today");
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [autoplanning, setAutoplanning] = useState(false);
   const qc = useQueryClient();
 
   const today = new Date().toISOString().split("T")[0];
 
   // Compute date range based on active tab
+  const viewDate = selectedDay || new Date();
+  const viewDateStr = format(viewDate, "yyyy-MM-dd");
+
   const { rangeStart, rangeEnd } = useMemo(() => {
-    if (activeTab === "today") return { rangeStart: today, rangeEnd: today };
+    if (activeTab === "today" || selectedDay) return { rangeStart: selectedDay ? viewDateStr : today, rangeEnd: selectedDay ? viewDateStr : today };
     if (activeTab === "week") {
       const ws = startOfWeek(currentDate, { weekStartsOn: 1 });
       return { rangeStart: format(ws, "yyyy-MM-dd"), rangeEnd: format(addDays(ws, 6), "yyyy-MM-dd") };
@@ -202,7 +206,7 @@ const GlobalPlanning = () => {
     const calStart = startOfWeek(ms, { weekStartsOn: 1 });
     const calEnd = endOfWeek(me, { weekStartsOn: 1 });
     return { rangeStart: format(calStart, "yyyy-MM-dd"), rangeEnd: format(calEnd, "yyyy-MM-dd") };
-  }, [activeTab, currentDate, today]);
+  }, [activeTab, currentDate, today, selectedDay, viewDateStr]);
 
   const { data: events = [] } = useCalendarEventsRange(rangeStart, rangeEnd);
   const { data: allTasks = [] } = useTasks();
@@ -234,7 +238,13 @@ const GlobalPlanning = () => {
 
   const totalPlanned = events.reduce((sum, e) => sum + (new Date(e.end_time).getTime() - new Date(e.start_time).getTime()) / 3600000, 0);
 
-  const dateLabel = activeTab === "today"
+  const handleDayClick = (date: Date) => {
+    setSelectedDay(date);
+  };
+
+  const dateLabel = selectedDay
+    ? format(selectedDay, "EEEE d MMMM", { locale: fr })
+    : activeTab === "today"
     ? format(new Date(), "EEEE d MMMM", { locale: fr })
     : activeTab === "week"
       ? `Semaine du ${format(startOfWeek(currentDate, { weekStartsOn: 1 }), "d MMM", { locale: fr })}`
@@ -263,7 +273,7 @@ const GlobalPlanning = () => {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1 p-1 bg-card/70 backdrop-blur-sm rounded-2xl shadow-soft">
             {TABS.map(tab => (
-              <motion.button key={tab.key} onClick={() => { setActiveTab(tab.key); setCurrentDate(new Date()); }} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className={`px-5 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === tab.key ? "gradient-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:text-foreground"}`}>
+              <motion.button key={tab.key} onClick={() => { setActiveTab(tab.key); setCurrentDate(new Date()); setSelectedDay(null); }} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className={`px-5 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === tab.key && !selectedDay ? "gradient-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:text-foreground"}`}>
                 {tab.label}
               </motion.button>
             ))}
@@ -278,7 +288,7 @@ const GlobalPlanning = () => {
         </div>
 
         {/* Routine zones legend */}
-        {routineZones.length > 0 && activeTab === "today" && (
+        {routineZones.length > 0 && (activeTab === "today" || selectedDay) && (
           <div className="flex items-center gap-4 flex-wrap">
             <span className="text-xs text-muted-foreground font-semibold">Zones de routine :</span>
             {routineZones.filter((z, i, arr) => arr.findIndex(x => x.type === z.type) === i).map(z => (
@@ -290,11 +300,25 @@ const GlobalPlanning = () => {
           </div>
         )}
 
+        {/* Back button when viewing a specific day */}
+        {selectedDay && (
+          <motion.button initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} onClick={() => setSelectedDay(null)} className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors">
+            <ChevronLeft className="w-3.5 h-3.5" />
+            Retour à la vue {activeTab === "week" ? "semaine" : "mois"}
+          </motion.button>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <FadeInSection className="lg:col-span-3">
-            {activeTab === "today" && <DayView events={events} routineZones={routineZones} />}
-            {activeTab === "week" && <WeekView events={events} weekStart={startOfWeek(currentDate, { weekStartsOn: 1 })} />}
-            {activeTab === "month" && <MonthView events={events} currentDate={currentDate} />}
+            {selectedDay ? (
+              <DayView events={events} routineZones={routineZones} />
+            ) : (
+              <>
+                {activeTab === "today" && <DayView events={events} routineZones={routineZones} />}
+                {activeTab === "week" && <WeekView events={events} weekStart={startOfWeek(currentDate, { weekStartsOn: 1 })} onDayClick={handleDayClick} />}
+                {activeTab === "month" && <MonthView events={events} currentDate={currentDate} onDayClick={handleDayClick} />}
+              </>
+            )}
           </FadeInSection>
 
           <StaggerContainer className="space-y-5" delay={0.2}>
