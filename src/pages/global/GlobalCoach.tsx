@@ -103,7 +103,7 @@ const GlobalCoach = () => {
   ];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)] lg:h-screen">
+    <div className="flex flex-col h-[calc(100vh-80px)] lg:h-screen pb-20 lg:pb-0">
         <motion.div className="border-b border-border/30 bg-card/80 backdrop-blur-sm px-6 py-4" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
           <div className="flex items-center gap-3 max-w-4xl mx-auto">
             <motion.div className="w-12 h-12 rounded-3xl gradient-warm flex items-center justify-center shadow-soft" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.1 }}>

@@ -197,7 +197,7 @@ const GlobalTasks = () => {
             return (
               <StaggerItem key={task.id}>
                 <HoverCard className="card-soft p-4">
-                  <div className="flex items-center gap-4 cursor-pointer" onClick={() => handleStatusChange(task.id, task.status, task.structure_id)}>
+                  <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleStatusChange(task.id, task.status, task.structure_id)}>
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${task.status === "done" ? "border-success bg-success" : task.status === "in_progress" ? "border-primary bg-primary/20" : "border-border hover:border-primary"}`}>
                       {task.status === "done" && <span className="text-white text-xs font-bold">✓</span>}
                       {task.status === "in_progress" && <span className="text-primary text-xs">▶</span>}
@@ -211,40 +211,40 @@ const GlobalTasks = () => {
                       </p>
                     </div>
 
-                    {/* Action buttons */}
-                    {task.status !== "done" && (
-                      <div className="flex items-center gap-1.5">
-                        {needsSplit && (
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={(e) => handleRefine(e, task.id)}
-                            disabled={refiningId === task.id}
-                            className="w-7 h-7 rounded-lg bg-accent/10 text-accent flex items-center justify-center"
-                            title="Découper (>60min)"
-                          >
-                            <Scissors className={`w-3.5 h-3.5 ${refiningId === task.id ? "animate-spin" : ""}`} />
-                          </motion.button>
-                        )}
+                    <span className={`pill text-[10px] font-bold px-2.5 py-1 shrink-0 ${task.priority === "high" ? "bg-destructive/20 text-destructive-foreground" : task.priority === "medium" ? "bg-warning/20 text-warning-foreground" : "bg-muted text-muted-foreground"}`}>{task.priority}</span>
+                  </div>
+
+                  {/* Action row — visible below on mobile */}
+                  {task.status !== "done" && (
+                    <div className="flex items-center gap-2 mt-2 ml-9 flex-wrap">
+                      {needsSplit && (
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          onClick={(e) => handleStartFocus(e, task)}
-                          className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center"
-                          title="Mode Focus"
+                          onClick={(e) => handleRefine(e, task.id)}
+                          disabled={refiningId === task.id}
+                          className="w-7 h-7 rounded-lg bg-accent/10 text-accent flex items-center justify-center"
+                          title="Découper (>60min)"
                         >
-                          <Brain className="w-3.5 h-3.5" />
+                          <Scissors className={`w-3.5 h-3.5 ${refiningId === task.id ? "animate-spin" : ""}`} />
                         </motion.button>
-                      </div>
-                    )}
-
-                    <CategorySelector
-                      value={((task as any).category as TaskCategory) || "admin"}
-                      onChange={(cat) => handleCategoryChange(task.id, cat)}
-                      compact
-                    />
-                    <span className={`pill text-[10px] font-bold px-2.5 py-1 ${task.priority === "high" ? "bg-destructive/20 text-destructive-foreground" : task.priority === "medium" ? "bg-warning/20 text-warning-foreground" : "bg-muted text-muted-foreground"}`}>{task.priority}</span>
-                  </div>
+                      )}
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={(e) => handleStartFocus(e, task)}
+                        className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center"
+                        title="Mode Focus"
+                      >
+                        <Brain className="w-3.5 h-3.5" />
+                      </motion.button>
+                      <CategorySelector
+                        value={((task as any).category as TaskCategory) || "admin"}
+                        onChange={(cat) => handleCategoryChange(task.id, cat)}
+                        compact
+                      />
+                    </div>
+                  )}
 
                   {/* Subtasks */}
                   {subtasks.length > 0 && (

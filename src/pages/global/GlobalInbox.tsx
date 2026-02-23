@@ -85,7 +85,7 @@ const GlobalInbox = () => {
                 return (
                   <StaggerItem key={task.id}>
                     <HoverCard className="card-soft p-5">
-                      <div className="flex items-start gap-4">
+                      <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
                         <div className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">{sourceIcon(task.source)}</div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
@@ -97,11 +97,11 @@ const GlobalInbox = () => {
                             <span>{task.due_date || 'Pas de date'}</span><span>·</span><span>{task.estimated_duration ? `${task.estimated_duration} min` : '-'}</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => handleAccept(task.id)} className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-success/15 text-success-foreground text-xs font-bold hover:bg-success/25 transition-all"><Check className="w-3.5 h-3.5" />Accepter</motion.button>
-                          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => handlePlan(task.id)} className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-accent/15 text-accent text-xs font-bold hover:bg-accent/25 transition-all"><Clock className="w-3.5 h-3.5" />Planifier</motion.button>
-                          <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleIgnore(task.id)} className="p-2 rounded-2xl bg-muted text-muted-foreground hover:text-foreground transition-all"><X className="w-4 h-4" /></motion.button>
-                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mt-3 sm:mt-0 sm:shrink-0 flex-wrap">
+                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => handleAccept(task.id)} className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-success/15 text-success-foreground text-xs font-bold hover:bg-success/25 transition-all"><Check className="w-3.5 h-3.5" />Accepter</motion.button>
+                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => handlePlan(task.id)} className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-accent/15 text-accent text-xs font-bold hover:bg-accent/25 transition-all"><Clock className="w-3.5 h-3.5" />Planifier</motion.button>
+                        <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleIgnore(task.id)} className="p-2 rounded-2xl bg-muted text-muted-foreground hover:text-foreground transition-all"><X className="w-4 h-4" /></motion.button>
                       </div>
                     </HoverCard>
                   </StaggerItem>
