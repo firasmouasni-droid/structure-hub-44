@@ -1,7 +1,8 @@
 import { useCalendarEvents, useCalendarEventsRange, useUpdateCalendarEvent, CalendarEvent } from "@/hooks/useCalendarEvents";
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { useRoutines } from "@/hooks/useRoutines";
-import { CalendarDays, Sparkles, Loader2, ChevronLeft, ChevronRight, Compass, Sun, Edit3, Clock } from "lucide-react";
+import { useWorkHoursSettings, useUpsertWorkHours, DEFAULT_WORK_HOURS, getWorkBlocks, parseTime } from "@/hooks/useWorkHours";
+import { CalendarDays, Sparkles, Loader2, ChevronLeft, ChevronRight, Compass, Sun, Edit3, Clock, Settings } from "lucide-react";
 import GuidedDayDialog from "@/components/guided/GuidedDayDialog";
 import MorningAuditDialog from "@/components/audit/MorningAuditDialog";
 import PlanningBlock from "@/components/planning/PlanningBlock";
@@ -27,14 +28,11 @@ const TABS = [
   { key: "month", label: "Mois" },
 ];
 
-// ── Work hours configuration ──
-const WORK_BLOCKS = [
-  { startHour: 9, startMin: 0, endHour: 12, endMin: 0 },  // Morning
-  { startHour: 13, startMin: 0, endHour: 18, endMin: 0 },  // Afternoon
-];
+// ── Work hours types ──
+type WorkBlock = { startHour: number; startMin: number; endHour: number; endMin: number };
 
 /** Convert work block to absolute minutes from START_HOUR */
-function workBlockToMinutes(block: typeof WORK_BLOCKS[0]) {
+function workBlockToMinutes(block: WorkBlock) {
   return {
     start: (block.startHour - START_HOUR) * 60 + block.startMin,
     end: (block.endHour - START_HOUR) * 60 + block.endMin,
@@ -42,8 +40,8 @@ function workBlockToMinutes(block: typeof WORK_BLOCKS[0]) {
 }
 
 /** Check if a range [startMin, endMin) fits entirely within work hours */
-function isWithinWorkHours(startMin: number, endMin: number): boolean {
-  return WORK_BLOCKS.some(block => {
+function isWithinWorkHours(startMin: number, endMin: number, workBlocks: WorkBlock[]): boolean {
+  return workBlocks.some(block => {
     const b = workBlockToMinutes(block);
     return startMin >= b.start && endMin <= b.end;
   });
@@ -54,16 +52,17 @@ function isTimeSlotFree(
   startMin: number,
   endMin: number,
   events: { startMin: number; endMin: number; id: string }[],
+  workBlocks: WorkBlock[],
   excludeId?: string
 ): { free: boolean; reason?: string } {
-  if (!isWithinWorkHours(startMin, endMin)) {
+  if (!isWithinWorkHours(startMin, endMin, workBlocks)) {
     const absStartH = START_HOUR + Math.floor(startMin / 60);
     const absStartM = startMin % 60;
     const absEndH = START_HOUR + Math.floor(endMin / 60);
     const absEndM = endMin % 60;
     return {
       free: false,
-      reason: `Hors horaires de travail (${String(absStartH).padStart(2, "0")}:${String(absStartM).padStart(2, "0")} – ${String(absEndH).padStart(2, "0")}:${String(absEndM).padStart(2, "0")}). Plages autorisées : ${WORK_BLOCKS.map(b => `${String(b.startHour).padStart(2, "0")}:${String(b.startMin).padStart(2, "0")}–${String(b.endHour).padStart(2, "0")}:${String(b.endMin).padStart(2, "0")}`).join(", ")}`,
+      reason: `Hors horaires de travail (${String(absStartH).padStart(2, "0")}:${String(absStartM).padStart(2, "0")} – ${String(absEndH).padStart(2, "0")}:${String(absEndM).padStart(2, "0")}). Plages autorisées : ${workBlocks.map(b => `${String(b.startHour).padStart(2, "0")}:${String(b.startMin).padStart(2, "0")}–${String(b.endHour).padStart(2, "0")}:${String(b.endMin).padStart(2, "0")}`).join(", ")}`,
     };
   }
   if (hasCollision(startMin, endMin, events, excludeId)) {
@@ -97,8 +96,8 @@ function getRoutineZones(routine: any) {
 }
 
 /** Check if a given hour is within any work block */
-function isHourInWorkBlock(hour: number): boolean {
-  return WORK_BLOCKS.some(b => hour >= b.startHour && hour < b.endHour);
+function isHourInWorkBlock(hour: number, workBlocks: WorkBlock[]): boolean {
+  return workBlocks.some(b => hour >= b.startHour && hour < b.endHour);
 }
 
 const ZONE_STYLES: Record<string, { bg: string; border: string }> = {
@@ -127,12 +126,13 @@ function hasCollision(startMin: number, endMin: number, events: { startMin: numb
 }
 
 // ── Day view with 15-minute pixel grid + free drag ──
-function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize }: {
+function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize, workBlocks }: {
   events: CalendarEvent[];
   routineZones: ReturnType<typeof getRoutineZones>;
   onEventMove?: (eventId: string, newStartMin: number) => void;
   onTaskDrop?: (taskId: string, startMin: number) => void;
   onEventResize?: (eventId: string, newEndMin: number) => void;
+  workBlocks: WorkBlock[];
 }) {
   const gridRef = useRef<HTMLDivElement>(null);
   const [dragGhostMin, setDragGhostMin] = useState<number | null>(null);
@@ -183,7 +183,7 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize 
     if (!id) { setDragGhostMin(null); return; }
 
     const endMin = min + duration;
-    const check = isTimeSlotFree(min, endMin, gridEvents, type === "event" ? id : undefined);
+    const check = isTimeSlotFree(min, endMin, gridEvents, workBlocks, type === "event" ? id : undefined);
 
     if (!check.free) {
       toast.error(check.reason || "Créneau indisponible");
@@ -229,7 +229,7 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize 
       const snapped = snapTo15(Math.max(finalEndMin, event.startMin + 15));
 
       // Validate
-      const check = isTimeSlotFree(event.startMin, snapped, gridEvents, event.id);
+      const check = isTimeSlotFree(event.startMin, snapped, gridEvents, workBlocks, event.id);
       if (!check.free) {
         toast.error(check.reason || "Créneau indisponible pour ce redimensionnement");
         setResizing(null);
@@ -261,7 +261,7 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize 
           const zone = getZoneForHour(hour);
           const zoneStyle = zone ? ZONE_STYLES[zone.type] : null;
           const isZoneStart = zone && hour === zone.start;
-          const inWorkHours = isHourInWorkBlock(hour);
+          const inWorkHours = isHourInWorkBlock(hour, workBlocks);
           const y = idx * HOUR_HEIGHT;
           return (
             <div
@@ -457,15 +457,13 @@ function MonthView({ events, currentDate, onDayClick }: { events: CalendarEvent[
 }
 
 // ── Time picker for unplanned tasks ──
-const TIME_SLOTS = (() => {
+function getTimeSlots(workBlocks: WorkBlock[]) {
   const slots: { hour: number; minute: number; label: string }[] = [];
   for (let h = 7; h <= 20; h++) {
     for (const m of [0, 15, 30, 45]) {
-      // Only include slots that fall within work hours
-      if (isHourInWorkBlock(h)) {
-        // Check the slot doesn't go past the work block end
+      if (isHourInWorkBlock(h, workBlocks)) {
         const slotEndMin = h * 60 + m + 15;
-        const inBlock = WORK_BLOCKS.some(b => {
+        const inBlock = workBlocks.some(b => {
           const bEnd = b.endHour * 60 + b.endMin;
           return h * 60 + m >= b.startHour * 60 + b.startMin && slotEndMin <= bEnd;
         });
@@ -476,14 +474,15 @@ const TIME_SLOTS = (() => {
     }
   }
   return slots;
-})();
+}
 
-function UnplannedTaskCard({ task, cat, CatIcon, onSchedule, onDragStart }: {
+function UnplannedTaskCard({ task, cat, CatIcon, onSchedule, onDragStart, workBlocks }: {
   task: any;
   cat: any;
   CatIcon: any;
   onSchedule: (hour: number, minute: number) => void;
   onDragStart: (e: React.DragEvent) => void;
+  workBlocks: WorkBlock[];
 }) {
   const [showPicker, setShowPicker] = useState(false);
 
@@ -524,7 +523,7 @@ function UnplannedTaskCard({ task, cat, CatIcon, onSchedule, onDragStart }: {
         >
           <p className="text-[10px] text-muted-foreground font-semibold px-2 py-1 mb-1">Planifier à…</p>
           <div className="grid grid-cols-4 gap-1">
-            {TIME_SLOTS.map(slot => (
+            {getTimeSlots(workBlocks).map(slot => (
               <button
                 key={slot.label}
                 onClick={() => { onSchedule(slot.hour, slot.minute); setShowPicker(false); }}
@@ -546,7 +545,25 @@ const GlobalPlanning = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [autoplanning, setAutoplanning] = useState(false);
+  const [showWorkHoursSettings, setShowWorkHoursSettings] = useState(false);
   const qc = useQueryClient();
+
+  // Work hours settings
+  const { data: workHoursData } = useWorkHoursSettings();
+  const upsertWorkHours = useUpsertWorkHours();
+  const workHoursSettings = workHoursData || DEFAULT_WORK_HOURS;
+  const workBlocks = useMemo(() => getWorkBlocks(workHoursSettings), [workHoursSettings]);
+
+  // Work hours form state
+  const [whForm, setWhForm] = useState({ work_start: "", work_end: "", pause_start: "", pause_end: "" });
+  useEffect(() => {
+    setWhForm({
+      work_start: workHoursSettings.work_start,
+      work_end: workHoursSettings.work_end,
+      pause_start: workHoursSettings.pause_start,
+      pause_end: workHoursSettings.pause_end,
+    });
+  }, [workHoursSettings]);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -722,10 +739,94 @@ const GlobalPlanning = () => {
               {autoplanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
               {autoplanning ? "Planification..." : "Auto-planifier via IA"}
             </motion.button>
+            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setShowWorkHoursSettings(!showWorkHoursSettings)} className={`p-2.5 rounded-2xl border text-sm font-bold transition-all ${showWorkHoursSettings ? "border-primary/50 text-primary bg-primary/5" : "border-border/30 text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}>
+              <Settings className="w-4 h-4" />
+            </motion.button>
           </div>
           <GuidedDayDialog open={guidedOpen} onOpenChange={setGuidedOpen} />
           <MorningAuditDialog open={auditOpen} onOpenChange={setAuditOpen} />
         </div>
+
+        {/* Work hours settings panel */}
+        {showWorkHoursSettings && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="card-soft p-5 space-y-4"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                <Settings className="w-4 h-4 text-primary" />
+                Horaires de travail
+              </h3>
+              <p className="text-[11px] text-muted-foreground">Les tâches ne pourront être planifiées que dans ces plages</p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">Début de journée</label>
+                <input
+                  type="time"
+                  value={whForm.work_start}
+                  onChange={e => setWhForm(f => ({ ...f, work_start: e.target.value }))}
+                  className="w-full rounded-xl border border-border/50 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">Début de pause</label>
+                <input
+                  type="time"
+                  value={whForm.pause_start}
+                  onChange={e => setWhForm(f => ({ ...f, pause_start: e.target.value }))}
+                  className="w-full rounded-xl border border-border/50 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">Fin de pause</label>
+                <input
+                  type="time"
+                  value={whForm.pause_end}
+                  onChange={e => setWhForm(f => ({ ...f, pause_end: e.target.value }))}
+                  className="w-full rounded-xl border border-border/50 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">Fin de journée</label>
+                <input
+                  type="time"
+                  value={whForm.work_end}
+                  onChange={e => setWhForm(f => ({ ...f, work_end: e.target.value }))}
+                  className="w-full rounded-xl border border-border/50 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] text-muted-foreground">
+                Plages actives : <span className="font-semibold text-foreground">{whForm.work_start}–{whForm.pause_start}</span> et <span className="font-semibold text-foreground">{whForm.pause_end}–{whForm.work_end}</span>
+              </p>
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => {
+                  const id = (workHoursData as any)?.id;
+                  upsertWorkHours.mutate(
+                    { ...whForm, id },
+                    {
+                      onSuccess: () => {
+                        toast.success("Horaires de travail mis à jour !");
+                        setShowWorkHoursSettings(false);
+                      },
+                      onError: () => toast.error("Erreur lors de la sauvegarde"),
+                    }
+                  );
+                }}
+                className="px-5 py-2 rounded-2xl gradient-primary text-primary-foreground text-sm font-bold shadow-soft"
+              >
+                Enregistrer
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
 
         {/* Adaptive planning banner */}
         {todayAudit && auditAdaptation && (
@@ -805,10 +906,10 @@ const GlobalPlanning = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <FadeInSection className="lg:col-span-3">
              {selectedDay ? (
-              <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} onEventResize={handleEventResize} />
+              <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} onEventResize={handleEventResize} workBlocks={workBlocks} />
             ) : (
               <>
-                {activeTab === "today" && <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} onEventResize={handleEventResize} />}
+                {activeTab === "today" && <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} onEventResize={handleEventResize} workBlocks={workBlocks} />}
                 {activeTab === "week" && <WeekView events={events} weekStart={startOfWeek(currentDate, { weekStartsOn: 1 })} onDayClick={handleDayClick} />}
                 {activeTab === "month" && <MonthView events={events} currentDate={currentDate} onDayClick={handleDayClick} />}
               </>
@@ -830,14 +931,13 @@ const GlobalPlanning = () => {
                         task={task}
                         cat={cat}
                         CatIcon={CatIcon}
+                        workBlocks={workBlocks}
                         onSchedule={(hour, minute) => {
                           const startMin = (hour - START_HOUR) * 60 + minute;
                           const duration = task.estimated_duration || 30;
                           const endMin = startMin + duration;
-                          // We need gridEvents but don't have them here — delegate to handleTaskDrop which will create the event
-                          // Validate work hours at least
-                          if (!isWithinWorkHours(startMin, endMin)) {
-                            toast.error(`Hors horaires de travail. Plages : ${WORK_BLOCKS.map(b => `${String(b.startHour).padStart(2, "0")}:${String(b.startMin).padStart(2, "0")}–${String(b.endHour).padStart(2, "0")}:${String(b.endMin).padStart(2, "0")}`).join(", ")}`);
+                          if (!isWithinWorkHours(startMin, endMin, workBlocks)) {
+                            toast.error(`Hors horaires de travail. Plages : ${workBlocks.map(b => `${String(b.startHour).padStart(2, "0")}:${String(b.startMin).padStart(2, "0")}–${String(b.endHour).padStart(2, "0")}:${String(b.endMin).padStart(2, "0")}`).join(", ")}`);
                             return;
                           }
                           handleTaskDrop(task.id, startMin);

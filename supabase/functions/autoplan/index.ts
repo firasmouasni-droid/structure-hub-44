@@ -74,6 +74,17 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const structureFilter = body.structure_id || null;
 
+    // 0a. Get user work hours settings
+    const { data: workHoursRow } = await supabase
+      .from("work_hours_settings")
+      .select("*")
+      .limit(1)
+      .maybeSingle();
+    const workStart = workHoursRow?.work_start || "09:00";
+    const workEnd = workHoursRow?.work_end || "18:00";
+    const pauseStart = workHoursRow?.pause_start || "12:00";
+    const pauseEnd = workHoursRow?.pause_end || "13:00";
+
     // 0. Get today's morning audit for adaptive planning
     const { data: auditData } = await supabase
       .from("daily_audits")
@@ -242,9 +253,9 @@ ${taskTypeMapping}
 ${auditContext}
 
 HORAIRES DE TRAVAIL STRICTS (NE JAMAIS placer en dehors) :
-- 09:00–12:00 (matin)
-- 13:00–18:00 (après-midi)
-- PAUSE DÉJEUNER : 12:00–13:00 (aucune tâche ne doit être dans cette plage)
+- ${workStart}–${pauseStart} (matin)
+- ${pauseEnd}–${workEnd} (après-midi)
+- PAUSE : ${pauseStart}–${pauseEnd} (aucune tâche ne doit être dans cette plage)
 - Toute tâche DOIT commencer ET finir ENTIÈREMENT dans l'une de ces plages
 
 RÈGLES CRITIQUES :
@@ -332,10 +343,12 @@ Tâches à placer (triées par priorité): ${JSON.stringify(correctedTasks)}
     const { planned, capacity_used, capacity_remaining, skipped_count, placement_summary } = result;
     let actuallyPlanned = 0;
 
-    // Work hours config (must match frontend)
+    // Work hours config from DB settings
+    const parseT = (t: string) => { const [h, m] = t.split(":").map(Number); return { h, m }; };
+    const ws = parseT(workStart), we = parseT(workEnd), ps = parseT(pauseStart), pe = parseT(pauseEnd);
     const WORK_BLOCKS_CONFIG = [
-      { startHour: 9, startMin: 0, endHour: 12, endMin: 0 },
-      { startHour: 13, startMin: 0, endHour: 18, endMin: 0 },
+      { startHour: ws.h, startMin: ws.m, endHour: ps.h, endMin: ps.m },
+      { startHour: pe.h, startMin: pe.m, endHour: we.h, endMin: we.m },
     ];
 
     function isWithinWorkHoursServer(startIso: string, endIso: string): boolean {
