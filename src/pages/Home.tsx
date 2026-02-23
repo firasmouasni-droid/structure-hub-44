@@ -1,7 +1,7 @@
 import { useStructures, useCreateStructure } from "@/hooks/useStructures";
 import { Plus, Brain, ArrowRight, CheckSquare, Inbox, Calendar, Bot, Target, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/motion/MotionWrappers";
@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useTasks } from "@/hooks/useTasks";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import WelcomeOnboarding from "@/components/onboarding/WelcomeOnboarding";
 
 const COLORS = [
   { label: "Lavande", value: "bg-primary" },
@@ -25,6 +26,15 @@ const Home = () => {
   const createStructure = useCreateStructure();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newStructure, setNewStructure] = useState({ name: "", color: "bg-primary", description: "" });
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
+
+  // Auto-open onboarding when no structures exist
+  useEffect(() => {
+    if (!isLoading && structures.length === 0 && !onboardingDismissed) {
+      setOnboardingOpen(true);
+    }
+  }, [isLoading, structures.length, onboardingDismissed]);
 
   const handleCreate = async () => {
     if (!newStructure.name.trim()) { toast.error("Donne un nom à ta structure"); return; }
@@ -188,6 +198,14 @@ const Home = () => {
           </div>
         </div>
       </PageTransition>
+
+      <WelcomeOnboarding
+        open={onboardingOpen}
+        onOpenChange={(open) => {
+          setOnboardingOpen(open);
+          if (!open) setOnboardingDismissed(true);
+        }}
+      />
     </div>
   );
 };
