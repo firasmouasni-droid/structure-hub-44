@@ -2,7 +2,7 @@ import { useCalendarEvents, useCalendarEventsRange, useUpdateCalendarEvent, useU
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { useRoutines } from "@/hooks/useRoutines";
 import { useWorkHoursSettings, useUpsertWorkHours, DEFAULT_WORK_HOURS, getWorkBlocks, parseTime } from "@/hooks/useWorkHours";
-import { CalendarDays, Sparkles, Loader2, ChevronLeft, ChevronRight, Compass, Sun, Edit3, Clock, Settings, Trash2, X, AlertTriangle } from "lucide-react";
+import { CalendarDays, Sparkles, Loader2, ChevronLeft, ChevronRight, Compass, Sun, Edit3, Clock, Settings, Trash2, X, AlertTriangle, Plus } from "lucide-react";
 import GuidedDayDialog from "@/components/guided/GuidedDayDialog";
 import MorningAuditDialog from "@/components/audit/MorningAuditDialog";
 import PlanningBlock from "@/components/planning/PlanningBlock";
@@ -126,7 +126,7 @@ function hasCollision(startMin: number, endMin: number, events: { startMin: numb
 }
 
 // ── Day view with 15-minute pixel grid + free drag ──
-function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize, onEventDelete, onEventUpdate, workBlocks }: {
+function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize, onEventDelete, onEventUpdate, onEventCreate, workBlocks }: {
   events: CalendarEvent[];
   routineZones: ReturnType<typeof getRoutineZones>;
   onEventMove?: (eventId: string, newStartMin: number) => void;
@@ -134,6 +134,7 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize,
   onEventResize?: (eventId: string, newEndMin: number) => void;
   onEventDelete?: (eventId: string) => void;
   onEventUpdate?: (id: string, title: string, category: string) => void;
+  onEventCreate?: (title: string, category: string, startMin: number, durationMin: number) => void;
   workBlocks: WorkBlock[];
 }) {
   const gridRef = useRef<HTMLDivElement>(null);
@@ -144,6 +145,10 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize,
   const [editingEvent, setEditingEvent] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editCategory, setEditCategory] = useState("");
+  const [creating, setCreating] = useState<{ startMin: number } | null>(null);
+  const [createTitle, setCreateTitle] = useState("");
+  const [createCategory, setCreateCategory] = useState<string>("admin");
+  const [createDuration, setCreateDuration] = useState(30);
 
   const totalGridHeight = hours.length * HOUR_HEIGHT;
 
@@ -255,11 +260,21 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize,
     <div className="card-soft overflow-hidden relative">
       <div
         ref={gridRef}
-        className="relative"
+        className="relative cursor-pointer"
         style={{ height: `${totalGridHeight}px` }}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        onClick={(e) => {
+          // Only trigger if clicking directly on the grid background (not on an event)
+          if (e.target === gridRef.current || (e.target as HTMLElement).closest('[data-grid-bg]')) {
+            const min = yToMinutes(e.clientY);
+            setCreating({ startMin: min });
+            setCreateTitle("");
+            setCreateCategory("admin");
+            setCreateDuration(30);
+          }
+        }}
       >
         {/* Hour lines */}
         {hours.map((hour, idx) => {
@@ -271,6 +286,7 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize,
           return (
             <div
               key={hour}
+              data-grid-bg="true"
               className="absolute left-0 right-0 border-b border-border/10"
               style={{
                 top: `${y}px`,
@@ -427,6 +443,93 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize,
           </div>
         );
       })()}
+
+      {/* Create event overlay */}
+      {creating && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => setCreating(null)}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-card border border-border/50 rounded-2xl shadow-xl p-5 max-w-sm w-full mx-4 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <Plus className="w-4 h-4 text-primary" />
+              <span className="text-sm font-bold text-foreground">Nouvel événement</span>
+              <span className="ml-auto text-xs text-muted-foreground">
+                {String(START_HOUR + Math.floor(creating.startMin / 60)).padStart(2, "0")}:{String(creating.startMin % 60).padStart(2, "0")}
+              </span>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-muted-foreground mb-1.5 block">Titre</label>
+              <input
+                autoFocus
+                value={createTitle}
+                onChange={(e) => setCreateTitle(e.target.value)}
+                placeholder="Ex : Réunion client, Deep work..."
+                className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && createTitle.trim()) {
+                    onEventCreate?.(createTitle.trim(), createCategory, creating.startMin, createDuration);
+                    setCreating(null);
+                  }
+                }}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-muted-foreground mb-1.5 block">Durée</label>
+              <div className="flex items-center gap-1.5">
+                {[15, 30, 45, 60, 90, 120].map(d => (
+                  <button
+                    key={d}
+                    onClick={() => setCreateDuration(d)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border ${createDuration === d ? "border-primary bg-primary/10 text-foreground" : "border-border/30 text-muted-foreground hover:bg-muted/50"}`}
+                  >
+                    {d >= 60 ? `${d / 60}h` : `${d}m`}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-muted-foreground mb-1.5 block">Catégorie</label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {CATEGORY_LIST.map(cat => (
+                  <button
+                    key={cat.key}
+                    onClick={() => setCreateCategory(cat.key)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all border ${createCategory === cat.key ? "border-primary bg-primary/10 text-foreground shadow-sm" : "border-border/30 text-muted-foreground hover:bg-muted/50"}`}
+                  >
+                    <span>{cat.emoji}</span>
+                    <span className="truncate">{cat.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                onClick={() => {
+                  if (createTitle.trim()) {
+                    onEventCreate?.(createTitle.trim(), createCategory, creating.startMin, createDuration);
+                    setCreating(null);
+                  } else {
+                    toast.error("Ajoute un titre pour l'événement");
+                  }
+                }}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Créer
+              </button>
+              <button
+                onClick={() => setCreating(null)}
+                className="px-4 py-2.5 rounded-xl bg-muted text-muted-foreground text-sm font-bold hover:bg-muted/80 transition-colors"
+              >
+                Annuler
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
@@ -733,6 +836,31 @@ const GlobalPlanning = () => {
       onError: () => toast.error("Erreur lors de la modification"),
     });
   }, [updateEventDetails]);
+
+  const handleEventCreate = useCallback(async (title: string, category: string, startMin: number, durationMin: number) => {
+    const targetDate = selectedDay || new Date();
+    const startTime = new Date(targetDate);
+    const hour = START_HOUR + Math.floor(startMin / 60);
+    const minute = startMin % 60;
+    startTime.setHours(hour, minute, 0, 0);
+    const endTime = new Date(startTime.getTime() + durationMin * 60_000);
+    try {
+      const { error } = await supabase.from("calendar_events").insert({
+        title,
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        category,
+        source: "manual",
+        color: null,
+        structure_id: null,
+      });
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ["calendar_events"] });
+      toast.success("Événement créé !");
+    } catch (e: any) {
+      toast.error(e.message || "Erreur lors de la création");
+    }
+  }, [selectedDay, qc]);
 
 
   const handleTaskDrop = useCallback(async (taskId: string, startMin: number) => {
@@ -1069,10 +1197,10 @@ const GlobalPlanning = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
            <FadeInSection className="lg:col-span-3">
              {selectedDay ? (
-               <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} onEventResize={handleEventResize} onEventDelete={handleEventDelete} onEventUpdate={handleEventUpdate} workBlocks={workBlocks} />
+                <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} onEventResize={handleEventResize} onEventDelete={handleEventDelete} onEventUpdate={handleEventUpdate} onEventCreate={handleEventCreate} workBlocks={workBlocks} />
             ) : (
               <>
-                {activeTab === "today" && <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} onEventResize={handleEventResize} onEventDelete={handleEventDelete} onEventUpdate={handleEventUpdate} workBlocks={workBlocks} />}
+                {activeTab === "today" && <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} onEventResize={handleEventResize} onEventDelete={handleEventDelete} onEventUpdate={handleEventUpdate} onEventCreate={handleEventCreate} workBlocks={workBlocks} />}
                 {activeTab === "week" && <WeekView events={events} weekStart={startOfWeek(currentDate, { weekStartsOn: 1 })} onDayClick={handleDayClick} />}
                 {activeTab === "month" && <MonthView events={events} currentDate={currentDate} onDayClick={handleDayClick} />}
               </>
