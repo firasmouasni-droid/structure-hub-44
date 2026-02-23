@@ -16,6 +16,13 @@ export default {
       fontFamily: {
         sans: ["Inter", "sans-serif"],
       },
+      fontSize: {
+        "h1": ["1.75rem", { lineHeight: "2.25rem", fontWeight: "600" }],
+        "h2": ["1.375rem", { lineHeight: "1.875rem", fontWeight: "600" }],
+        "h3": ["1.125rem", { lineHeight: "1.625rem", fontWeight: "500" }],
+        "body": ["0.9375rem", { lineHeight: "1.5rem", fontWeight: "400" }],
+        "caption": ["0.8125rem", { lineHeight: "1.125rem", fontWeight: "400" }],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -87,30 +94,20 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        "pulse-glow": {
-          "0%, 100%": { opacity: "1" },
-          "50%": { opacity: "0.7" },
-        },
-        "slide-up": {
-          from: { transform: "translateY(10px)", opacity: "0" },
-          to: { transform: "translateY(0)", opacity: "1" },
-        },
         "fade-in": {
           from: { opacity: "0" },
           to: { opacity: "1" },
         },
-        "progress-fill": {
-          from: { width: "0%" },
-          to: { width: "var(--progress-width)" },
+        "slide-up": {
+          from: { transform: "translateY(4px)", opacity: "0" },
+          to: { transform: "translateY(0)", opacity: "1" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "pulse-glow": "pulse-glow 2s ease-in-out infinite",
-        "slide-up": "slide-up 0.4s ease-out",
-        "fade-in": "fade-in 0.3s ease-out",
-        "progress-fill": "progress-fill 1s ease-out forwards",
+        "fade-in": "fade-in 0.2s ease-out",
+        "slide-up": "slide-up 0.3s ease-out",
       },
     },
   },
