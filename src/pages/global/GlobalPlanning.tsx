@@ -842,7 +842,7 @@ const GlobalPlanning = () => {
     const startTime = new Date(targetDate);
     const hour = START_HOUR + Math.floor(startMin / 60);
     const minute = startMin % 60;
-    startTime.setHours(hour, minute, 0, 0);
+    startTime.setUTCHours(hour, minute, 0, 0);
     const endTime = new Date(startTime.getTime() + durationMin * 60_000);
     try {
       const { error } = await supabase.from("calendar_events").insert({
