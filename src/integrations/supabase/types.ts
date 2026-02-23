@@ -55,6 +55,7 @@ export type Database = {
       }
       calendar_events: {
         Row: {
+          category: string
           color: string | null
           created_at: string
           end_time: string
@@ -65,6 +66,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          category?: string
           color?: string | null
           created_at?: string
           end_time: string
@@ -75,6 +77,7 @@ export type Database = {
           title: string
         }
         Update: {
+          category?: string
           color?: string | null
           created_at?: string
           end_time?: string
@@ -328,6 +331,7 @@ export type Database = {
           action_label: string
           action_type: string
           actual_duration: number | null
+          category: string
           computed_priority: number | null
           created_at: string
           domain: string | null
@@ -351,6 +355,7 @@ export type Database = {
           action_label: string
           action_type?: string
           actual_duration?: number | null
+          category?: string
           computed_priority?: number | null
           created_at?: string
           domain?: string | null
@@ -374,6 +379,7 @@ export type Database = {
           action_label?: string
           action_type?: string
           actual_duration?: number | null
+          category?: string
           computed_priority?: number | null
           created_at?: string
           domain?: string | null
