@@ -178,23 +178,49 @@ const Tasks = () => {
               return (
                 <StaggerItem key={task.id}>
                   <HoverCard
-                    className="card-soft p-4 flex items-center gap-4 cursor-pointer"
+                    className="card-soft p-4 cursor-pointer"
                     onClick={() => handleStatusChange(task.id, task.status)}
                   >
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${task.status === "done" ? "border-success bg-success" : "border-border hover:border-primary"}`}>
-                      {task.status === "done" && <span className="text-white text-xs font-bold">✓</span>}
+                    {/* Desktop layout */}
+                    <div className="hidden sm:flex items-center gap-4">
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${task.status === "done" ? "border-success bg-success" : "border-border hover:border-primary"}`}>
+                        {task.status === "done" && <span className="text-white text-xs font-bold">✓</span>}
+                      </div>
+                      <div className={`w-8 h-8 rounded-xl ${structure?.color || 'bg-muted'} flex items-center justify-center shrink-0`}>
+                        <span className="text-white text-[10px] font-bold">{structure?.name?.charAt(0) || '?'}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-medium truncate ${task.status === "done" ? "line-through text-muted-foreground" : "text-foreground"}`}>{task.action_label}</p>
+                        <p className="text-[11px] text-muted-foreground">{structure?.name} · {task.estimated_duration ? `${task.estimated_duration} min` : '-'} · {task.due_date || 'Pas de date'}</p>
+                      </div>
+                      <span className="pill text-[10px] font-semibold px-2.5 py-1 bg-muted text-muted-foreground">{task.action_type}</span>
+                      <span className={`pill text-[10px] font-bold px-2.5 py-1 ${task.priority === "high" ? "bg-destructive/20 text-destructive-foreground" : task.priority === "medium" ? "bg-warning/20 text-warning-foreground" : "bg-muted text-muted-foreground"}`}>{task.priority}</span>
+                      <div className="w-12 h-1.5 bg-muted rounded-pill overflow-hidden shrink-0">
+                        <div className={`h-full rounded-pill transition-all ${task.status === "done" ? "bg-success w-full" : task.status === "in_progress" ? "gradient-warm w-1/2" : "w-0"}`} />
+                      </div>
                     </div>
-                    <div className={`w-8 h-8 rounded-xl ${structure?.color || 'bg-muted'} flex items-center justify-center shrink-0`}>
-                      <span className="text-white text-[10px] font-bold">{structure?.name?.charAt(0) || '?'}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium truncate ${task.status === "done" ? "line-through text-muted-foreground" : "text-foreground"}`}>{task.action_label}</p>
-                      <p className="text-[11px] text-muted-foreground">{structure?.name} · {task.estimated_duration ? `${task.estimated_duration} min` : '-'} · {task.due_date || 'Pas de date'}</p>
-                    </div>
-                    <span className="pill text-[10px] font-semibold px-2.5 py-1 bg-muted text-muted-foreground">{task.action_type}</span>
-                    <span className={`pill text-[10px] font-bold px-2.5 py-1 ${task.priority === "high" ? "bg-destructive/20 text-destructive-foreground" : task.priority === "medium" ? "bg-warning/20 text-warning-foreground" : "bg-muted text-muted-foreground"}`}>{task.priority}</span>
-                    <div className="w-12 h-1.5 bg-muted rounded-pill overflow-hidden shrink-0">
-                      <div className={`h-full rounded-pill transition-all ${task.status === "done" ? "bg-success w-full" : task.status === "in_progress" ? "gradient-warm w-1/2" : "w-0"}`} />
+
+                    {/* Mobile layout */}
+                    <div className="flex sm:hidden gap-3">
+                      <div className="flex flex-col items-center gap-2 pt-0.5">
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${task.status === "done" ? "border-success bg-success" : "border-border hover:border-primary"}`}>
+                          {task.status === "done" && <span className="text-white text-xs font-bold">✓</span>}
+                        </div>
+                        <div className={`w-7 h-7 rounded-lg ${structure?.color || 'bg-muted'} flex items-center justify-center shrink-0`}>
+                          <span className="text-white text-[9px] font-bold">{structure?.name?.charAt(0) || '?'}</span>
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-medium ${task.status === "done" ? "line-through text-muted-foreground" : "text-foreground"}`}>{task.action_label}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">{structure?.name} · {task.estimated_duration ? `${task.estimated_duration} min` : '-'} · {task.due_date || 'Pas de date'}</p>
+                        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                          <span className="pill text-[10px] font-semibold px-2 py-0.5 bg-muted text-muted-foreground">{task.action_type}</span>
+                          <span className={`pill text-[10px] font-bold px-2 py-0.5 ${task.priority === "high" ? "bg-destructive/20 text-destructive-foreground" : task.priority === "medium" ? "bg-warning/20 text-warning-foreground" : "bg-muted text-muted-foreground"}`}>{task.priority}</span>
+                          <div className="flex-1 h-1.5 bg-muted rounded-pill overflow-hidden min-w-[40px]">
+                            <div className={`h-full rounded-pill transition-all ${task.status === "done" ? "bg-success w-full" : task.status === "in_progress" ? "gradient-warm w-1/2" : "w-0"}`} />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </HoverCard>
                 </StaggerItem>
