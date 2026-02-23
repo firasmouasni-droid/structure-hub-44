@@ -4,7 +4,7 @@ import { useGoals } from "@/hooks/useGoals";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useLifeSpaces } from "@/hooks/useLifeSpaces";
-import { CheckCircle2, Clock, TrendingUp, Target, Flame, Zap, ArrowRight, Calendar, Brain, Lock } from "lucide-react";
+import { CheckCircle2, Clock, TrendingUp, Target, Flame, Zap, ArrowRight, Calendar, Brain, Lock, Sun, Battery, Smile, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -12,7 +12,7 @@ import { useState } from "react";
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard, FadeInSection } from "@/components/motion/MotionWrappers";
 import { motion } from "framer-motion";
 import MorningAuditDialog from "@/components/audit/MorningAuditDialog";
-import { Sun } from "lucide-react";
+import { useTodayAudit } from "@/hooks/useDailyAudit";
 
 const LifeHQ = () => {
   const { data: tasks = [] } = useTasks();
@@ -23,7 +23,7 @@ const LifeHQ = () => {
   const today = new Date().toISOString().split("T")[0];
   const { data: todayEvents = [] } = useCalendarEvents(today);
   const [auditOpen, setAuditOpen] = useState(false);
-
+  const { data: todayAudit, isLoading: auditLoading } = useTodayAudit();
   const doneTasks = tasks.filter(t => t.status === "done").length;
   const activeTasks = tasks.filter(t => t.status !== "done").length;
   const progress = tasks.length > 0 ? Math.round((doneTasks / tasks.length) * 100) : 0;
@@ -89,6 +89,71 @@ const LifeHQ = () => {
           <StaggerItem><QuickStat icon={<TrendingUp className="w-5 h-5" />} iconBg="bg-primary/15 text-primary" label="Progression globale" value={`${progress}%`} /></StaggerItem>
           <StaggerItem><QuickStat icon={<Target className="w-5 h-5" />} iconBg="bg-secondary/15 text-secondary" label="Objectifs actifs" value={String(goals.filter(g => g.status === "active").length)} /></StaggerItem>
         </StaggerContainer>
+
+        {/* Check-in summary or reminder */}
+        <FadeInSection>
+          {todayAudit ? (
+            <div className="card-soft p-5 border-l-4 border-success">
+              <div className="flex items-center gap-3 mb-3">
+                <Sun className="w-5 h-5 text-warning" />
+                <h2 className="text-sm font-bold text-foreground">Check-in du jour</h2>
+                <span className="text-[10px] text-muted-foreground ml-auto">Fait aujourd'hui ✓</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="flex items-center gap-2">
+                  <Battery className="w-4 h-4 text-primary" />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Énergie</p>
+                    <p className="text-sm font-bold text-foreground">{todayAudit.energy_level}/5</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Smile className="w-4 h-4 text-warning" />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Humeur</p>
+                    <p className="text-sm font-bold text-foreground capitalize">{
+                      ({ neutral: "Neutre", motivated: "Motivé", stressed: "Stressé", anxious: "Anxieux", calm: "Calme", happy: "Content" } as Record<string, string>)[todayAudit.mood] ?? todayAudit.mood
+                    }</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Brain className="w-4 h-4 text-accent" />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Clarté mentale</p>
+                    <p className="text-sm font-bold text-foreground capitalize">{
+                      ({ clear: "Claire", normal: "Normale", fog: "Brumeuse" } as Record<string, string>)[todayAudit.mental_clarity] ?? todayAudit.mental_clarity
+                    }</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Target className="w-4 h-4 text-secondary" />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Objectif du jour</p>
+                    <p className="text-sm font-bold text-foreground capitalize">{
+                      ({ balance: "Équilibre", productivity: "Productivité", recovery: "Récupération", slow: "Tranquille" } as Record<string, string>)[todayAudit.day_objective] ?? todayAudit.day_objective
+                    }</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : !auditLoading ? (
+            <motion.button
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              onClick={() => setAuditOpen(true)}
+              className="w-full card-soft p-5 border-l-4 border-warning cursor-pointer hover:bg-warning/5 transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-warning" />
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-foreground">Tu n'as pas encore fait ton check-in</p>
+                  <p className="text-xs text-muted-foreground">Évalue ton énergie, humeur et clarté mentale pour adapter ta journée</p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-muted-foreground" />
+              </div>
+            </motion.button>
+          ) : null}
+        </FadeInSection>
 
         {/* Life Spaces Overview */}
         <FadeInSection>
