@@ -4,7 +4,7 @@ import { useRoutines } from "@/hooks/useRoutines";
 import { CalendarDays, Sparkles, Loader2, ChevronLeft, ChevronRight, Compass } from "lucide-react";
 import GuidedDayDialog from "@/components/guided/GuidedDayDialog";
 import PlanningBlock from "@/components/planning/PlanningBlock";
-import { CATEGORIES, type TaskCategory, getCategoryColor } from "@/lib/categories";
+import { CATEGORIES, CATEGORY_LIST, type TaskCategory, getCategoryColor } from "@/lib/categories";
 import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay, eachDayOfInterval, isToday, getDay } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useState, useMemo, useCallback } from "react";
@@ -437,6 +437,20 @@ const GlobalPlanning = () => {
               <button onClick={() => navigateDate(1)} className="p-1.5 rounded-xl hover:bg-muted transition-colors"><ChevronRight className="w-4 h-4 text-muted-foreground" /></button>
             </div>
           )}
+        </div>
+
+        {/* Category color legend */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-muted-foreground font-semibold mr-1">Catégories :</span>
+          {CATEGORY_LIST.map(cat => {
+            const Icon = cat.icon;
+            return (
+              <div key={cat.key} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-colors" style={{ backgroundColor: `${cat.colors.light}30` }}>
+                <Icon className="w-3 h-3" style={{ color: cat.colors.normal }} />
+                <span className="text-[11px] font-medium" style={{ color: cat.colors.normal }}>{cat.label}</span>
+              </div>
+            );
+          })}
         </div>
 
         {/* Routine zones legend */}
