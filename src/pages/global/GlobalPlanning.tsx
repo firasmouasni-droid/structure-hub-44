@@ -50,8 +50,8 @@ const DAY_NAMES_SHORT = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 // ── Day view (hourly grid) ──
 function DayView({ events, routineZones }: { events: CalendarEvent[]; routineZones: ReturnType<typeof getRoutineZones> }) {
   const mappedEvents = events.map(e => {
-    const startHour = new Date(e.start_time).getHours();
-    const startMin = new Date(e.start_time).getMinutes();
+    const startHour = new Date(e.start_time).getUTCHours();
+    const startMin = new Date(e.start_time).getUTCMinutes();
     const durationHours = (new Date(e.end_time).getTime() - new Date(e.start_time).getTime()) / 3600000;
     return { ...e, startHour, startMin, durationHours };
   });
@@ -114,7 +114,8 @@ function WeekView({ events, weekStart }: { events: CalendarEvent[]; weekStart: D
               </div>
               <div className="space-y-1">
                 {dayEvents.map((event, i) => {
-                  const startH = format(new Date(event.start_time), "HH:mm");
+                  const d = new Date(event.start_time);
+                  const startH = `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
                   return (
                     <div key={i} className="rounded-lg px-1.5 py-1 bg-primary/10 border border-primary/20 text-primary">
                       <p className="text-[10px] font-bold truncate">{event.title}</p>
