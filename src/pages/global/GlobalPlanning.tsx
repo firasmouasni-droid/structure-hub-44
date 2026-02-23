@@ -127,16 +127,18 @@ function hasCollision(startMin: number, endMin: number, events: { startMin: numb
 }
 
 // ── Day view with 15-minute pixel grid + free drag ──
-function DayView({ events, routineZones, onEventMove, onTaskDrop }: {
+function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize }: {
   events: CalendarEvent[];
   routineZones: ReturnType<typeof getRoutineZones>;
   onEventMove?: (eventId: string, newStartMin: number) => void;
   onTaskDrop?: (taskId: string, startMin: number) => void;
+  onEventResize?: (eventId: string, newEndMin: number) => void;
 }) {
   const gridRef = useRef<HTMLDivElement>(null);
   const [dragGhostMin, setDragGhostMin] = useState<number | null>(null);
   const [dragGhostDuration, setDragGhostDuration] = useState<number>(30);
   const [dragType, setDragType] = useState<"event" | "task" | null>(null);
+  const [resizing, setResizing] = useState<{ eventId: string; startMin: number; currentEndMin: number } | null>(null);
 
   const totalGridHeight = hours.length * HOUR_HEIGHT;
 
@@ -208,6 +210,42 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop }: {
     setDragType("event");
   }, []);
 
+  // ── Resize logic ──
+  const handleResizeStart = useCallback((e: React.MouseEvent, event: typeof gridEvents[0]) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setResizing({ eventId: event.id, startMin: event.startMin, currentEndMin: event.endMin });
+
+    const onMouseMove = (me: MouseEvent) => {
+      const newEndMin = yToMinutes(me.clientY);
+      const snapped = Math.max(newEndMin, event.startMin + 15); // min 15 min
+      setResizing(prev => prev ? { ...prev, currentEndMin: snapped } : null);
+    };
+
+    const onMouseUp = (me: MouseEvent) => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+      const finalEndMin = yToMinutes(me.clientY);
+      const snapped = snapTo15(Math.max(finalEndMin, event.startMin + 15));
+
+      // Validate
+      const check = isTimeSlotFree(event.startMin, snapped, gridEvents, event.id);
+      if (!check.free) {
+        toast.error(check.reason || "Créneau indisponible pour ce redimensionnement");
+        setResizing(null);
+        return;
+      }
+
+      if (onEventResize && snapped !== event.endMin) {
+        onEventResize(event.id, snapped);
+      }
+      setResizing(null);
+    };
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  }, [yToMinutes, gridEvents, onEventResize]);
+
   return (
     <div className="card-soft overflow-hidden relative">
       <div
@@ -263,8 +301,11 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop }: {
 
         {/* Events */}
         {gridEvents.map((event, i) => {
+          const isResizing = resizing?.eventId === event.id;
+          const effectiveEndMin = isResizing ? resizing.currentEndMin : event.endMin;
+          const effectiveDuration = effectiveEndMin - event.startMin;
           const topPx = (event.startMin / 60) * HOUR_HEIGHT;
-          const heightPx = Math.max((event.durationMin / 60) * HOUR_HEIGHT, 28);
+          const heightPx = Math.max((effectiveDuration / 60) * HOUR_HEIGHT, 28);
           return (
             <div
               key={event.id}
@@ -275,7 +316,7 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop }: {
                 eventId={event.id}
                 title={event.title}
                 category={(event as any).category || "admin"}
-                durationHours={event.durationMin / 60}
+                durationHours={effectiveDuration / 60}
                 source={event.source}
                 height={heightPx}
                 top={0}
@@ -284,6 +325,13 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop }: {
                 onDragStart={(e) => handleEventDragStart(e, event)}
                 onDragEnd={() => { setDragGhostMin(null); setDragType(null); }}
               />
+              {/* Resize handle at bottom */}
+              <div
+                className="absolute bottom-0 left-2 right-2 h-3 cursor-s-resize z-20 group/resize flex items-center justify-center"
+                onMouseDown={(e) => handleResizeStart(e, event)}
+              >
+                <div className="w-8 h-1 rounded-full bg-muted-foreground/20 group-hover/resize:bg-primary/50 transition-colors" />
+              </div>
             </div>
           );
         })}
@@ -561,6 +609,24 @@ const GlobalPlanning = () => {
     );
   }, [events, updateEvent]);
 
+  const handleEventResize = useCallback((eventId: string, newEndMin: number) => {
+    const event = events.find(e => e.id === eventId);
+    if (!event) return;
+    const oldStart = new Date(event.start_time);
+    const newEnd = new Date(oldStart);
+    const endHour = START_HOUR + Math.floor(newEndMin / 60);
+    const endMinute = newEndMin % 60;
+    newEnd.setUTCHours(endHour, endMinute, 0, 0);
+    const durationMin = Math.round((newEnd.getTime() - oldStart.getTime()) / 60000);
+    updateEvent.mutate(
+      { id: eventId, start_time: oldStart.toISOString(), end_time: newEnd.toISOString() },
+      {
+        onSuccess: () => toast.success(`Durée modifiée → ${durationMin} min`),
+        onError: () => toast.error("Erreur lors du redimensionnement"),
+      }
+    );
+  }, [events, updateEvent]);
+
   const handleTaskDrop = useCallback(async (taskId: string, startMin: number) => {
     const task = allTasks.find(t => t.id === taskId);
     if (!task) return;
@@ -738,11 +804,11 @@ const GlobalPlanning = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <FadeInSection className="lg:col-span-3">
-            {selectedDay ? (
-              <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} />
+             {selectedDay ? (
+              <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} onEventResize={handleEventResize} />
             ) : (
               <>
-                {activeTab === "today" && <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} />}
+                {activeTab === "today" && <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} onEventResize={handleEventResize} />}
                 {activeTab === "week" && <WeekView events={events} weekStart={startOfWeek(currentDate, { weekStartsOn: 1 })} onDayClick={handleDayClick} />}
                 {activeTab === "month" && <MonthView events={events} currentDate={currentDate} onDayClick={handleDayClick} />}
               </>
