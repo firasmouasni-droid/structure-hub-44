@@ -1,5 +1,5 @@
 import { useStructures, useCreateStructure } from "@/hooks/useStructures";
-import { Plus, Brain, ArrowRight } from "lucide-react";
+import { Plus, Brain, ArrowRight, CheckSquare, Inbox, Calendar, Bot, Target, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -69,8 +69,8 @@ const Home = () => {
             </div>
           </motion.div>
 
-          {/* Global HQ card */}
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          {/* Global HQ Section */}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="space-y-4">
             <Link to="/global/dashboard">
               <HoverCard className="card-soft p-6 group cursor-pointer border-2 border-primary/20 hover:border-primary/40 transition-all">
                 <div className="flex items-center justify-between">
@@ -87,6 +87,31 @@ const Home = () => {
                 </div>
               </HoverCard>
             </Link>
+
+            {/* Quick access grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              {[
+                { label: "Tâches", icon: CheckSquare, path: "/global/tasks", color: "bg-primary/10 text-primary" },
+                { label: "Inbox IA", icon: Inbox, path: "/global/inbox", color: "bg-secondary/15 text-secondary-foreground" },
+                { label: "Planning", icon: Calendar, path: "/global/planning", color: "bg-accent/15 text-accent" },
+                { label: "Objectifs", icon: Target, path: "/global/objectives", color: "bg-success/15 text-success-foreground" },
+                { label: "Routines", icon: Clock, path: "/global/routines", color: "bg-warning/15 text-warning-foreground" },
+                { label: "Coach IA", icon: Bot, path: "/global/coach", color: "bg-primary/10 text-primary" },
+              ].map((item) => (
+                <Link key={item.path} to={item.path}>
+                  <motion.div
+                    whileHover={{ scale: 1.04, y: -2 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="card-soft p-4 flex flex-col items-center gap-2 cursor-pointer hover:shadow-md transition-shadow"
+                  >
+                    <div className={`w-10 h-10 rounded-2xl ${item.color} flex items-center justify-center`}>
+                      <item.icon className="w-5 h-5" />
+                    </div>
+                    <span className="text-xs font-semibold text-foreground">{item.label}</span>
+                  </motion.div>
+                </Link>
+              ))}
+            </div>
           </motion.div>
 
           {/* Structure Cards */}
