@@ -173,9 +173,23 @@ const Home = () => {
             >
               {(() => {
                 const hour = new Date().getHours();
-                if (hour < 12) return "☀️ Prêt à conquérir cette matinée ?";
-                if (hour < 17) return "🚀 L'après-midi est à toi, fonce !";
-                return "✨ Belle soirée pour faire le point";
+                const urgentCount = urgentTasks.length;
+                if (urgentCount === 0) {
+                  if (hour < 12) return "☀️ Aucune urgence ce matin, profite pour avancer !";
+                  if (hour < 17) return "🎯 Zéro urgence, c'est le moment de viser loin !";
+                  return "✨ Rien d'urgent, belle soirée pour planifier demain";
+                }
+                if (urgentCount === 1) {
+                  if (hour < 12) return "☀️ 1 tâche urgente t'attend, tu gères !";
+                  if (hour < 17) return "🚀 Plus qu'1 urgence à traiter, fonce !";
+                  return "✨ 1 urgence encore, un dernier effort ce soir ?";
+                }
+                if (urgentCount <= 3) {
+                  if (hour < 12) return `⚡ ${urgentCount} tâches urgentes, attaque les une par une !`;
+                  if (hour < 17) return `🔥 ${urgentCount} urgences en cours, reste focus !`;
+                  return `💪 ${urgentCount} urgences restantes, tu peux en venir à bout`;
+                }
+                return `🚨 ${urgentCount} tâches urgentes — priorise l'essentiel !`;
               })()}
             </motion.p>
 
