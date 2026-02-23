@@ -14,6 +14,8 @@ import FocusMode from "@/components/focus/FocusMode";
 import { NextActionDialog, WIPWarningDialog } from "@/components/focus/ProductivityDialogs";
 import { useTasks } from "@/hooks/useTasks";
 import type { Task } from "@/hooks/useTasks";
+import CategorySelector from "@/components/planning/CategorySelector";
+import { CATEGORIES, type TaskCategory } from "@/lib/categories";
 
 const ACTION_TYPES = ["CALL", "EMAIL", "MEETING", "WRITE", "PLAN", "BUILD", "REVIEW", "LEARN", "ADMIN", "OTHER"];
 const TABS = [
@@ -37,7 +39,7 @@ const StructureTasks = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [newTask, setNewTask] = useState({ action_label: "", action_type: "OTHER", priority: "medium", due_date: "", estimated_duration: "", domain: "" });
+  const [newTask, setNewTask] = useState({ action_label: "", action_type: "OTHER", priority: "medium", due_date: "", estimated_duration: "", domain: "", category: "admin" as TaskCategory });
   const [focusTask, setFocusTask] = useState<Task | null>(null);
   const [nextActionTaskId, setNextActionTaskId] = useState<string | null>(null);
   const [wipWarningOpen, setWipWarningOpen] = useState(false);
@@ -71,9 +73,10 @@ const StructureTasks = () => {
       estimated_duration: newTask.estimated_duration ? parseInt(newTask.estimated_duration) : null,
       due_date: newTask.due_date || null,
       domain: newTask.domain || null,
-    });
+      category: newTask.category,
+    } as any);
     setDialogOpen(false);
-    setNewTask({ action_label: "", action_type: "OTHER", priority: "medium", due_date: "", estimated_duration: "", domain: "" });
+    setNewTask({ action_label: "", action_type: "OTHER", priority: "medium", due_date: "", estimated_duration: "", domain: "", category: "admin" });
     toast.success("Tâche créée !");
   };
 
@@ -148,6 +151,10 @@ const StructureTasks = () => {
                     <input type="date" value={newTask.due_date} onChange={e => setNewTask(p => ({ ...p, due_date: e.target.value }))} className="px-4 py-3 rounded-2xl border border-border bg-card/90 text-sm" />
                     <input type="number" placeholder="Durée (min)" value={newTask.estimated_duration} onChange={e => setNewTask(p => ({ ...p, estimated_duration: e.target.value }))} className="px-4 py-3 rounded-2xl border border-border bg-card/90 text-sm" />
                   </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Catégorie :</span>
+                    <CategorySelector value={newTask.category} onChange={(cat) => setNewTask(p => ({ ...p, category: cat }))} />
+                  </div>
                   <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} onClick={handleCreate} disabled={createTask.isPending} className="w-full py-3 rounded-2xl gradient-primary text-primary-foreground text-sm font-bold shadow-soft">
                     {createTask.isPending ? "Création..." : "Créer"}
                   </motion.button>
@@ -193,6 +200,8 @@ const StructureTasks = () => {
           {filtered.map((task) => {
             const subtasks = getSubtasks(task.id);
             const needsSplit = (task.estimated_duration || 30) > 60 && !task.is_refined;
+            const taskCat = CATEGORIES[(task as any).category as TaskCategory] || CATEGORIES.admin;
+            const CatIcon = taskCat.icon;
             return (
               <StaggerItem key={task.id}>
                 <HoverCard className="card-soft p-4">
@@ -220,7 +229,11 @@ const StructureTasks = () => {
                         </motion.button>
                       </div>
                     )}
-                    <span className="pill text-[10px] font-semibold px-2.5 py-1 bg-muted text-muted-foreground hidden sm:inline">{task.action_type}</span>
+                    <CategorySelector
+                      value={(task as any).category || "admin"}
+                      onChange={(cat) => updateTask.mutateAsync({ id: task.id, category: cat } as any)}
+                      compact
+                    />
                     <span className={`pill text-[10px] font-bold px-2.5 py-1 ${task.priority === "high" ? "bg-destructive/20 text-destructive-foreground" : task.priority === "medium" ? "bg-warning/20 text-warning-foreground" : "bg-muted text-muted-foreground"}`}>{task.priority}</span>
                   </div>
                   {subtasks.length > 0 && (
