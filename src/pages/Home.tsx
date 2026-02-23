@@ -1,13 +1,12 @@
 import { useStructures, useCreateStructure } from "@/hooks/useStructures";
 import { useLifeSpaces } from "@/hooks/useLifeSpaces";
-import { Plus, Brain, ArrowRight, CheckSquare, Inbox, Calendar, Bot, Target, Clock, Lock, Sun, CalendarDays } from "lucide-react";
+import { Plus, Brain, ArrowRight, CheckSquare, Calendar, Bot, Lock, Sun, CalendarDays } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/motion/MotionWrappers";
 import { motion } from "framer-motion";
-import { useUserStats } from "@/hooks/useUserStats";
 import { useTasks } from "@/hooks/useTasks";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
@@ -27,7 +26,6 @@ const COLORS = [
 const Home = () => {
   const { data: structures = [], isLoading: structuresLoading } = useStructures();
   const { data: lifeSpaces = [], isLoading: spacesLoading } = useLifeSpaces();
-  const { data: stats } = useUserStats();
   const { data: allTasks = [] } = useTasks({ isInbox: false });
   const { data: allEvents = [] } = useCalendarEvents();
 
@@ -60,9 +58,8 @@ const Home = () => {
     toast.success("Structure créée !");
   };
 
-  const level = stats?.level ?? 1;
-  const xp = stats?.xp ?? 0;
-  const streak = stats?.streak_days ?? 0;
+
+
 
   const enabledSpaces = lifeSpaces.filter((s) => s.enabled);
   const disabledSpaces = lifeSpaces.filter((s) => !s.enabled);
@@ -105,50 +102,22 @@ const Home = () => {
                   <Sun className="w-4 h-4 text-warning" />
                   <span className="text-xs font-bold text-foreground hidden sm:inline">Check-in</span>
                 </motion.button>
-                <div className="pill px-4 py-2 bg-card/70 backdrop-blur-sm shadow-soft flex items-center gap-2">
-                  <span className="text-xs font-bold text-foreground">⭐ Niv. {level}</span>
-                  <span className="text-xs text-muted-foreground">{xp} XP</span>
-                </div>
-                {streak > 0 && (
-                  <div className="pill px-4 py-2 bg-card/70 backdrop-blur-sm shadow-soft">
-                    <span className="text-xs font-bold text-foreground">🔥 {streak}j</span>
-                  </div>
-                )}
                 <ThemeToggle />
               </div>
             </div>
           </motion.div>
 
-          {/* ── QG Général + raccourcis globaux ── */}
+          {/* ── Raccourcis rapides ── */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="space-y-4">
-            <Link to="/life-hq">
-              <HoverCard className="card-soft p-6 group cursor-pointer border-2 border-primary/20 hover:border-primary/40 transition-all">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-3xl gradient-primary flex items-center justify-center shadow-soft">
-                      <Brain className="w-7 h-7 text-primary-foreground" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">QG Général</h2>
-                      <p className="text-xs text-muted-foreground">Vue consolidée de tous tes espaces de vie</p>
-                    </div>
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                </div>
-              </HoverCard>
-            </Link>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {[
+                { label: "QG Général", sub: "Cockpit stratégique", icon: Brain, path: "/life-hq", color: "gradient-primary text-primary-foreground", special: true },
                 { label: "Tâches", sub: "Tous espaces", icon: CheckSquare, path: "/global/tasks", color: "bg-primary/10 text-primary" },
-                { label: "Inbox IA", sub: "Suggestions à traiter", icon: Inbox, path: "/global/inbox", color: "bg-secondary/15 text-secondary-foreground" },
                 { label: "Planning", sub: "Planning global", icon: Calendar, path: "/global/planning", color: "bg-accent/15 text-accent" },
-                { label: "Objectifs", sub: "Objectifs de vie", icon: Target, path: "/global/objectives", color: "bg-success/15 text-success-foreground" },
-                { label: "Routines", sub: "Habitudes globales", icon: Clock, path: "/global/routines", color: "bg-warning/15 text-warning-foreground" },
                 { label: "Coach IA", sub: "Conseils personnalisés", icon: Bot, path: "/global/coach", color: "bg-primary/10 text-primary" },
               ].map((item) => (
                 <Link key={item.path} to={item.path}>
-                  <motion.div whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.97 }} className="card-soft p-4 flex flex-col items-center gap-1.5 cursor-pointer hover:shadow-md transition-shadow text-center">
+                  <motion.div whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.97 }} className={`card-soft p-4 flex flex-col items-center gap-1.5 cursor-pointer hover:shadow-md transition-shadow text-center ${(item as any).special ? "border-2 border-primary/20" : ""}`}>
                     <div className={`w-10 h-10 rounded-2xl ${item.color} flex items-center justify-center`}>
                       <item.icon className="w-5 h-5" />
                     </div>

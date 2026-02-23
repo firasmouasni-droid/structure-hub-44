@@ -64,7 +64,7 @@ const LifeHQ = () => {
               <div>
                 <h1 className="text-2xl font-bold text-foreground">QG Général</h1>
                 <p className="text-sm text-muted-foreground">
-                  Cockpit de ta vie · <span className="capitalize">{format(new Date(), "EEEE d MMMM", { locale: fr })}</span>
+                  Vision stratégique de ta vie · <span className="capitalize">{format(new Date(), "EEEE d MMMM", { locale: fr })}</span>
                 </p>
               </div>
             </div>
