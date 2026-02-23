@@ -2,13 +2,15 @@ import { useCalendarEventsByStructure, useCalendarEventsByStructureRange, useUpd
 import { useTasksByStructure, useUpdateTask } from "@/hooks/useTasks";
 import { useRoutines } from "@/hooks/useRoutines";
 import { CalendarDays, Sparkles, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import PlanningBlock from "@/components/planning/PlanningBlock";
+import { CATEGORIES, CATEGORY_LIST, type TaskCategory } from "@/lib/categories";
 import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useState, useMemo, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { PageTransition, StaggerContainer, StaggerItem, HoverCard, FadeInSection } from "@/components/motion/MotionWrappers";
+import { PageTransition, StaggerContainer, StaggerItem, FadeInSection } from "@/components/motion/MotionWrappers";
 import { motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -23,6 +25,18 @@ const DAY_NAMES_SHORT = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 function getRoutineZones(routine: any) {
   if (!routine) return [];
   const zones: { start: number; end: number; label: string; type: string; icon: string }[] = [];
+  const blocks = routine.blocks as any[];
+  if (Array.isArray(blocks) && blocks.length > 0) {
+    const iconMap: Record<string, string> = { deep_work: "🔴", admin: "☕", meetings: "☕", email: "📧", break: "⏸" };
+    for (const b of blocks) {
+      if (b.type === "break") continue;
+      const startH = parseInt(b.start?.split(":")[0] || "0");
+      const endH = parseInt(b.end?.split(":")[0] || "0");
+      const endM = parseInt(b.end?.split(":")[1] || "0");
+      zones.push({ start: startH, end: endM > 0 ? endH + 1 : endH, label: b.label || b.type, type: b.type === "meetings" ? "admin" : b.type, icon: iconMap[b.type] || "☕" });
+    }
+    return zones;
+  }
   const mf = routine.morning_focus as any;
   const af = routine.afternoon_tasks as any;
   const es = routine.email_slots as any;
@@ -32,50 +46,98 @@ function getRoutineZones(routine: any) {
   return zones;
 }
 
-const ZONE_STYLES: Record<string, string> = {
-  deep_work: "bg-purple-500/5 border-l-2 border-l-purple-500/20",
-  admin: "bg-blue-500/5 border-l-2 border-l-blue-500/20",
-  email: "bg-cyan-500/5 border-l-2 border-l-cyan-500/20",
+const ZONE_STYLES: Record<string, { bg: string; border: string }> = {
+  deep_work: { bg: `${CATEGORIES.focus.colors.light}15`, border: CATEGORIES.focus.colors.normal },
+  admin: { bg: `${CATEGORIES.admin.colors.light}15`, border: CATEGORIES.admin.colors.normal },
+  email: { bg: `${CATEGORIES.communication.colors.light}15`, border: CATEGORIES.communication.colors.normal },
+  meetings: { bg: `${CATEGORIES.meetings.colors.light}15`, border: CATEGORIES.meetings.colors.normal },
 };
 
-function DayView({ events, routineZones, onEventMove }: { events: CalendarEvent[]; routineZones: ReturnType<typeof getRoutineZones>; onEventMove?: (eventId: string, newHour: number) => void }) {
+// ── Day view with drag-and-drop + category colors ──
+function DayView({ events, routineZones, onEventMove, onTaskDrop }: { events: CalendarEvent[]; routineZones: ReturnType<typeof getRoutineZones>; onEventMove?: (eventId: string, newHour: number) => void; onTaskDrop?: (taskId: string, hour: number) => void }) {
   const [dragOverHour, setDragOverHour] = useState<number | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
-  const mappedEvents = events.map(e => ({ ...e, startHour: new Date(e.start_time).getUTCHours(), startMin: new Date(e.start_time).getUTCMinutes(), durationHours: (new Date(e.end_time).getTime() - new Date(e.start_time).getTime()) / 3600000 }));
+
+  const mappedEvents = events.map(e => {
+    const startHour = new Date(e.start_time).getUTCHours();
+    const startMin = new Date(e.start_time).getUTCMinutes();
+    const durationHours = (new Date(e.end_time).getTime() - new Date(e.start_time).getTime()) / 3600000;
+    return { ...e, startHour, startMin, durationHours };
+  });
+
   const getZoneForHour = (hour: number) => routineZones.find(z => hour >= z.start && hour < z.end);
+
+  const handleDragStart = (e: React.DragEvent, eventId: string) => {
+    e.dataTransfer.setData("text/plain", eventId);
+    e.dataTransfer.setData("drag-type", "event");
+    e.dataTransfer.effectAllowed = "move";
+    setDraggingId(eventId);
+  };
+
+  const handleDrop = (e: React.DragEvent, hour: number) => {
+    e.preventDefault();
+    const dragType = e.dataTransfer.getData("drag-type");
+    const id = e.dataTransfer.getData("text/plain");
+    if (dragType === "task" && id && onTaskDrop) {
+      onTaskDrop(id, hour);
+    } else if (id && onEventMove) {
+      onEventMove(id, hour);
+    }
+    setDragOverHour(null);
+    setDraggingId(null);
+  };
 
   return (
     <div className="card-soft overflow-hidden">
       {hours.map((hour, idx) => {
         const zone = getZoneForHour(hour);
-        const zoneStyle = zone ? ZONE_STYLES[zone.type] || "" : "";
+        const zoneStyle = zone ? ZONE_STYLES[zone.type] : null;
         const isZoneStart = zone && hour === zone.start;
         const isDropTarget = dragOverHour === hour;
         return (
-          <motion.div key={hour} className={`flex border-b border-border/20 last:border-0 ${zoneStyle} ${isDropTarget ? "bg-primary/10 ring-1 ring-primary/30" : ""} transition-colors`} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.02, duration: 0.3 }}
+          <motion.div
+            key={hour}
+            className="flex border-b border-border/10 last:border-0 transition-colors"
+            style={{
+              backgroundColor: isDropTarget ? "rgba(138,99,246,0.08)" : zoneStyle ? zoneStyle.bg : undefined,
+              borderLeftWidth: zoneStyle ? "3px" : undefined,
+              borderLeftColor: zoneStyle ? `${zoneStyle.border}40` : undefined,
+            }}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: idx * 0.015, duration: 0.25 }}
             onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDragOverHour(hour); }}
             onDragLeave={() => setDragOverHour(null)}
-            onDrop={(e) => { e.preventDefault(); const id = e.dataTransfer.getData("text/plain"); if (id && onEventMove) onEventMove(id, hour); setDragOverHour(null); setDraggingId(null); }}
+            onDrop={(e) => handleDrop(e, hour)}
           >
             <div className="w-16 py-5 text-right pr-4 text-xs text-muted-foreground shrink-0 font-semibold">
               {hour}:00
-              {isZoneStart && <div className="text-[9px] mt-0.5 opacity-60">{zone.icon} {zone.label}</div>}
+              {isZoneStart && (
+                <div className="text-[9px] mt-0.5 font-medium" style={{ color: zoneStyle?.border || undefined, opacity: 0.7 }}>
+                  {zone.icon} {zone.label}
+                </div>
+              )}
             </div>
-            <div className="flex-1 relative min-h-[64px] border-l border-border/20">
+            <div className="flex-1 relative min-h-[68px] border-l border-border/15 py-0.5">
               {mappedEvents.filter(e => e.startHour === hour).map((event, i) => (
-                <motion.div key={i} draggable
-                  onDragStart={(e: any) => { e.dataTransfer.setData("text/plain", event.id); e.dataTransfer.effectAllowed = "move"; setDraggingId(event.id); }}
+                <PlanningBlock
+                  key={event.id}
+                  eventId={event.id}
+                  title={event.title}
+                  category={(event as any).category || "admin"}
+                  durationHours={event.durationHours}
+                  source={event.source}
+                  height={Math.max(event.durationHours * 68, 44)}
+                  top={event.startMin}
+                  index={i}
+                  isDragging={draggingId === event.id}
+                  onDragStart={(e) => handleDragStart(e, event.id)}
                   onDragEnd={() => { setDragOverHour(null); setDraggingId(null); }}
-                  className={`absolute left-2 right-2 rounded-2xl px-4 py-2.5 border bg-primary/12 border-primary/20 text-primary z-10 cursor-grab active:cursor-grabbing select-none ${draggingId === event.id ? "opacity-40 scale-95" : ""} transition-all`}
-                  style={{ height: `${Math.max(event.durationHours * 64, 40)}px`, top: `${event.startMin}px` }}
-                  initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: draggingId === event.id ? 0.4 : 1, scale: draggingId === event.id ? 0.95 : 1 }}>
-                  <p className="text-xs font-bold truncate">{event.title}</p>
-                  <p className="text-[11px] opacity-70">{event.durationHours.toFixed(1)}h · {event.source === "ai" ? "IA" : event.source}</p>
-                </motion.div>
+                />
               ))}
               {isDropTarget && mappedEvents.filter(e => e.startHour === hour).length === 0 && (
-                <div className="absolute inset-2 rounded-2xl border-2 border-dashed border-primary/30 flex items-center justify-center">
-                  <p className="text-[10px] text-primary/50 font-medium">Déposer ici</p>
+                <div className="absolute inset-2 rounded-2xl border-2 border-dashed border-primary/25 flex items-center justify-center">
+                  <p className="text-[10px] text-primary/40 font-medium">Déposer ici</p>
                 </div>
               )}
             </div>
@@ -86,6 +148,7 @@ function DayView({ events, routineZones, onEventMove }: { events: CalendarEvent[
   );
 }
 
+// ── Week view with category colors ──
 function WeekView({ events, weekStart, onDayClick }: { events: CalendarEvent[]; weekStart: Date; onDayClick?: (date: Date) => void }) {
   const days = eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 6) });
   const eventsByDay = useMemo(() => {
@@ -107,12 +170,17 @@ function WeekView({ events, weekStart, onDayClick }: { events: CalendarEvent[]; 
                 <p className={`text-sm font-bold ${isToday(day) ? "text-primary" : "text-foreground"}`}>{format(day, "d")}</p>
               </div>
               <div className="space-y-1">
-                {dayEvents.map((event, i) => (
-                  <div key={i} className="rounded-lg px-1.5 py-1 bg-primary/10 border border-primary/20 text-primary">
-                    <p className="text-[10px] font-bold truncate">{event.title}</p>
-                    <p className="text-[9px] opacity-70">{`${String(new Date(event.start_time).getUTCHours()).padStart(2, '0')}:${String(new Date(event.start_time).getUTCMinutes()).padStart(2, '0')}`}</p>
-                  </div>
-                ))}
+                {dayEvents.map((event, i) => {
+                  const d = new Date(event.start_time);
+                  const startH = `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+                  const cat = CATEGORIES[(event as any).category as TaskCategory] || CATEGORIES.admin;
+                  return (
+                    <div key={i} className="rounded-lg px-1.5 py-1 border" style={{ backgroundColor: `${cat.colors.light}40`, borderColor: `${cat.colors.normal}30`, color: cat.colors.normal }}>
+                      <p className="text-[10px] font-bold truncate" style={{ color: "#2A2A2A" }}>{event.title}</p>
+                      <p className="text-[9px] opacity-70">{startH}</p>
+                    </div>
+                  );
+                })}
                 {dayEvents.length === 0 && <p className="text-[10px] text-muted-foreground/50 text-center mt-4">—</p>}
               </div>
             </div>
@@ -123,6 +191,7 @@ function WeekView({ events, weekStart, onDayClick }: { events: CalendarEvent[]; 
   );
 }
 
+// ── Month view with category colors ──
 function MonthView({ events, currentDate, onDayClick }: { events: CalendarEvent[]; currentDate: Date; onDayClick?: (date: Date) => void }) {
   const calStart = startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 });
   const calEnd = endOfWeek(endOfMonth(currentDate), { weekStartsOn: 1 });
@@ -146,11 +215,14 @@ function MonthView({ events, currentDate, onDayClick }: { events: CalendarEvent[
           return (
             <div key={key} className={`min-h-[80px] p-1 border-b border-border/10 cursor-pointer hover:bg-primary/5 transition-colors ${isToday(day) ? "bg-primary/5" : ""} ${!isCurrentMonth ? "opacity-40" : ""}`} onClick={() => onDayClick?.(day)}>
               <p className={`text-[11px] font-bold mb-0.5 ${isToday(day) ? "text-primary" : "text-foreground"}`}>{format(day, "d")}</p>
-              {dayEvents.slice(0, 3).map((event, i) => (
-                <div key={i} className="rounded px-1 py-0.5 mb-0.5 bg-primary/10 text-primary truncate">
-                  <p className="text-[9px] font-medium truncate">{event.title}</p>
-                </div>
-              ))}
+              {dayEvents.slice(0, 3).map((event, i) => {
+                const cat = CATEGORIES[(event as any).category as TaskCategory] || CATEGORIES.admin;
+                return (
+                  <div key={i} className="rounded px-1 py-0.5 mb-0.5 truncate" style={{ backgroundColor: `${cat.colors.light}40`, color: cat.colors.normal }}>
+                    <p className="text-[9px] font-medium truncate" style={{ color: "#2A2A2A" }}>{event.title}</p>
+                  </div>
+                );
+              })}
               {dayEvents.length > 3 && <p className="text-[9px] text-muted-foreground">+{dayEvents.length - 3}</p>}
             </div>
           );
@@ -160,6 +232,7 @@ function MonthView({ events, currentDate, onDayClick }: { events: CalendarEvent[
   );
 }
 
+// ── Main component ──
 const StructurePlanning = () => {
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState("today");
@@ -207,10 +280,35 @@ const StructurePlanning = () => {
     );
   }, [events, updateEvent]);
 
-  const handlePlanToday = async (taskId: string) => {
-    await updateTask.mutateAsync({ id: taskId, due_date: today });
-    toast.success("Tâche planifiée aujourd'hui !");
-  };
+  const handleTaskDrop = useCallback(async (taskId: string, hour: number) => {
+    const task = allTasks.find(t => t.id === taskId);
+    if (!task) return;
+    const targetDate = selectedDay || new Date();
+    const startTime = new Date(targetDate);
+    startTime.setUTCHours(hour, 0, 0, 0);
+    const durationMin = task.estimated_duration || 30;
+    const endTime = new Date(startTime.getTime() + durationMin * 60_000);
+    const category = (task as any).category || "admin";
+
+    try {
+      const { error } = await supabase.from("calendar_events").insert({
+        title: task.action_label,
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        structure_id: task.structure_id,
+        category,
+        source: "manual",
+        color: null,
+      });
+      if (error) throw error;
+      await supabase.from("tasks").update({ due_date: format(targetDate, "yyyy-MM-dd") }).eq("id", taskId);
+      qc.invalidateQueries({ queryKey: ["calendar_events"] });
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      toast.success(`"${task.action_label}" planifiée à ${hour}h00 !`);
+    } catch {
+      toast.error("Erreur lors de la planification");
+    }
+  }, [allTasks, selectedDay, qc]);
 
   const handleAutoplan = async () => {
     setAutoplanning(true);
@@ -273,15 +371,33 @@ const StructurePlanning = () => {
           )}
         </div>
 
-        {routineZones.length > 0 && (activeTab === "today" || selectedDay) && (
-          <div className="flex items-center gap-4 flex-wrap">
-            <span className="text-xs text-muted-foreground font-semibold">Zones de routine :</span>
-            {routineZones.filter((z, i, arr) => arr.findIndex(x => x.type === z.type) === i).map(z => (
-              <div key={z.type} className="flex items-center gap-1.5">
-                <span className="text-xs">{z.icon}</span>
-                <span className="text-[11px] text-muted-foreground">{z.label}</span>
+        {/* Category color legend */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-muted-foreground font-semibold mr-1">Catégories :</span>
+          {CATEGORY_LIST.map(cat => {
+            const Icon = cat.icon;
+            return (
+              <div key={cat.key} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-colors" style={{ backgroundColor: `${cat.colors.light}30` }}>
+                <Icon className="w-3 h-3" style={{ color: cat.colors.normal }} />
+                <span className="text-[11px] font-medium" style={{ color: cat.colors.normal }}>{cat.label}</span>
               </div>
-            ))}
+            );
+          })}
+        </div>
+
+        {/* Routine zones legend */}
+        {routineZones.length > 0 && (activeTab === "today" || selectedDay) && (
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-xs text-muted-foreground font-semibold">Zones :</span>
+            {routineZones.filter((z, i, arr) => arr.findIndex(x => x.type === z.type) === i).map(z => {
+              const zoneColor = ZONE_STYLES[z.type];
+              return (
+                <div key={z.type} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ backgroundColor: zoneColor ? `${zoneColor.border}15` : undefined }}>
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: zoneColor?.border }} />
+                  <span className="text-[11px] font-medium" style={{ color: zoneColor?.border }}>{z.label}</span>
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -295,10 +411,10 @@ const StructurePlanning = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <FadeInSection className="lg:col-span-3">
             {selectedDay ? (
-              <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} />
+              <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} />
             ) : (
               <>
-                {activeTab === "today" && <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} />}
+                {activeTab === "today" && <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} onTaskDrop={handleTaskDrop} />}
                 {activeTab === "week" && <WeekView events={events} weekStart={startOfWeek(currentDate, { weekStartsOn: 1 })} onDayClick={handleDayClick} />}
                 {activeTab === "month" && <MonthView events={events} currentDate={currentDate} onDayClick={handleDayClick} />}
               </>
@@ -311,15 +427,37 @@ const StructurePlanning = () => {
                 <h2 className="text-sm font-bold text-foreground mb-3">À planifier</h2>
                 <div className="space-y-2">
                   {unplannedTasks.length === 0 && <p className="text-xs text-muted-foreground">Tout est planifié 🎉</p>}
-                  {unplannedTasks.slice(0, 6).map(task => (
-                    <HoverCard key={task.id} className="p-3 rounded-2xl border border-dashed border-border hover:border-primary/30 transition-all">
-                      <p className="text-sm font-medium text-foreground">{task.action_label}</p>
-                      <div className="flex items-center justify-between mt-2">
-                        <span className={`pill text-[10px] font-bold px-2 py-0.5 ${task.priority === "high" ? "bg-destructive/20 text-destructive-foreground" : "bg-muted text-muted-foreground"}`}>{task.priority}</span>
-                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => handlePlanToday(task.id)} className="pill px-3 py-1 text-[11px] font-bold text-primary bg-primary/10 hover:bg-primary/20 transition-all">Aujourd'hui</motion.button>
+                  {unplannedTasks.slice(0, 6).map(task => {
+                    const cat = CATEGORIES[(task as any).category as TaskCategory] || CATEGORIES.admin;
+                    const CatIcon = cat.icon;
+                    return (
+                      <div
+                        key={task.id}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData("text/plain", task.id);
+                          e.dataTransfer.setData("drag-type", "task");
+                          e.dataTransfer.effectAllowed = "copyMove";
+                        }}
+                        className="p-3 rounded-2xl border border-dashed transition-all cursor-grab active:cursor-grabbing hover:-translate-y-0.5 hover:shadow-md"
+                        style={{ borderColor: `${cat.colors.normal}30`, backgroundColor: `${cat.colors.light}12` }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <CatIcon className="w-3.5 h-3.5 shrink-0" style={{ color: cat.colors.normal }} />
+                          <p className="text-sm font-medium text-foreground truncate">{task.action_label}</p>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <span className="pill text-[10px] font-bold px-2 py-0.5" style={{ backgroundColor: `${cat.colors.light}50`, color: cat.colors.normal }}>{cat.label}</span>
+                          {task.estimated_duration && (
+                            <span className="text-[10px] text-muted-foreground">{task.estimated_duration} min</span>
+                          )}
+                          {task.priority === "high" && (
+                            <span className="pill text-[10px] font-bold px-2 py-0.5" style={{ backgroundColor: `${CATEGORIES.urgent.colors.light}50`, color: CATEGORIES.urgent.colors.normal }}>Prioritaire</span>
+                          )}
+                        </div>
                       </div>
-                    </HoverCard>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </StaggerItem>
