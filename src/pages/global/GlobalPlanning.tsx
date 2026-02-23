@@ -352,8 +352,10 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize,
                   setEditingEvent(event.id);
                   setEditTitle(ev.title);
                   setEditCategory((ev as any).category || "admin");
-                  setEditStartTime(ev.start_time ? new Date(ev.start_time).toTimeString().slice(0, 5) : "");
-                  setEditEndTime(ev.end_time ? new Date(ev.end_time).toTimeString().slice(0, 5) : "");
+                  const st = new Date(ev.start_time);
+                  const et = new Date(ev.end_time);
+                  setEditStartTime(`${String(st.getUTCHours()).padStart(2,"0")}:${String(st.getUTCMinutes()).padStart(2,"0")}`);
+                  setEditEndTime(`${String(et.getUTCHours()).padStart(2,"0")}:${String(et.getUTCMinutes()).padStart(2,"0")}`);
                 }
               }}
             >
@@ -887,8 +889,8 @@ const GlobalPlanning = () => {
     let end_time: string | undefined;
     if (startTimeStr && endTimeStr) {
       const dateStr = (selectedDay || format(currentDate, "yyyy-MM-dd"));
-      start_time = `${dateStr}T${startTimeStr}:00`;
-      end_time = `${dateStr}T${endTimeStr}:00`;
+      start_time = `${dateStr}T${startTimeStr}:00Z`;
+      end_time = `${dateStr}T${endTimeStr}:00Z`;
     }
     updateEventDetails.mutate({ id, title, category, start_time, end_time }, {
       onSuccess: () => toast.success("Événement modifié !"),
