@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      badges: {
+        Row: {
+          category: string
+          condition_type: string
+          condition_value: number
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          key: string
+          name: string
+          xp_reward: number
+        }
+        Insert: {
+          category?: string
+          condition_type: string
+          condition_value?: number
+          created_at?: string
+          description: string
+          icon?: string
+          id?: string
+          key: string
+          name: string
+          xp_reward?: number
+        }
+        Update: {
+          category?: string
+          condition_type?: string
+          condition_value?: number
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          key?: string
+          name?: string
+          xp_reward?: number
+        }
+        Relationships: []
+      }
       calendar_events: {
         Row: {
           color: string | null
@@ -353,6 +392,35 @@ export type Database = {
           },
         ]
       }
+      user_badges: {
+        Row: {
+          badge_id: string
+          earned_at: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          badge_id: string
+          earned_at?: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          badge_id?: string
+          earned_at?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_stats: {
         Row: {
           created_at: string
@@ -380,6 +448,33 @@ export type Database = {
           streak_days?: number
           user_id?: string | null
           xp?: number
+        }
+        Relationships: []
+      }
+      xp_events: {
+        Row: {
+          created_at: string
+          description: string | null
+          event_type: string
+          id: string
+          user_id: string | null
+          xp_amount: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          event_type: string
+          id?: string
+          user_id?: string | null
+          xp_amount: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          event_type?: string
+          id?: string
+          user_id?: string | null
+          xp_amount?: number
         }
         Relationships: []
       }
