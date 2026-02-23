@@ -1,11 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Inbox, CheckSquare, Calendar, Bot } from "lucide-react";
+import { Home, Briefcase, CheckSquare, Calendar, Bot } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTasks } from "@/hooks/useTasks";
 
 const navItems = [
-  { label: "Home", icon: LayoutDashboard, path: "/global/dashboard" },
-  { label: "Inbox", icon: Inbox, path: "/global/inbox" },
+  { label: "Accueil", icon: Home, path: "/" },
+  { label: "Travail", icon: Briefcase, path: "/spaces/work", matchPrefix: ["/spaces/work", "/global/", "/structures/"] },
   { label: "Tâches", icon: CheckSquare, path: "/global/tasks" },
   { label: "Planning", icon: Calendar, path: "/global/planning" },
   { label: "Coach", icon: Bot, path: "/global/coach" },
@@ -16,13 +16,20 @@ export const BottomNav = () => {
   const { data: inboxTasks = [] } = useTasks({ isInbox: true });
   const inboxCount = inboxTasks.length;
 
+  const isItemActive = (item: typeof navItems[0]) => {
+    if (item.matchPrefix) {
+      return item.matchPrefix.some((p) => location.pathname.startsWith(p));
+    }
+    return location.pathname === item.path;
+  };
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
       <div className="bg-card/90 backdrop-blur-xl border-t border-border/40 px-2 pb-[env(safe-area-inset-bottom)] transition-colors duration-300">
         <div className="flex items-center justify-around h-16">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            const badge = item.path === "/global/inbox" && inboxCount > 0 ? inboxCount : null;
+            const isActive = isItemActive(item);
+            const badge = item.path === "/global/tasks" && inboxCount > 0 ? inboxCount : null;
             return (
               <Link key={item.path} to={item.path} className="relative flex flex-col items-center justify-center gap-0.5 w-16 h-full">
                 <div className="relative">
