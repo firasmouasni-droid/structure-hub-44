@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface CalendarEvent {
@@ -74,5 +74,24 @@ export function useCalendarEventsByStructureRange(structureId: string, startDate
       return data as CalendarEvent[];
     },
     enabled: !!structureId,
+  });
+}
+
+export function useUpdateCalendarEvent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, start_time, end_time }: { id: string; start_time: string; end_time: string }) => {
+      const { data, error } = await supabase
+        .from("calendar_events")
+        .update({ start_time, end_time })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["calendar_events"] });
+    },
   });
 }
