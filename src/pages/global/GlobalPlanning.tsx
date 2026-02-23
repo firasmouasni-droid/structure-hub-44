@@ -21,6 +21,28 @@ const TABS = [
 function getRoutineZones(routine: any) {
   if (!routine) return [];
   const zones: { start: number; end: number; label: string; type: string; icon: string }[] = [];
+
+  // Use blocks array if available (Module 1 routines)
+  const blocks = routine.blocks as any[];
+  if (Array.isArray(blocks) && blocks.length > 0) {
+    const iconMap: Record<string, string> = { deep_work: "🔴", admin: "☕", meetings: "☕", email: "📧", break: "⏸" };
+    for (const b of blocks) {
+      if (b.type === "break") continue;
+      const startH = parseInt(b.start?.split(":")[0] || "0");
+      const endH = parseInt(b.end?.split(":")[0] || "0");
+      const endM = parseInt(b.end?.split(":")[1] || "0");
+      zones.push({
+        start: startH,
+        end: endM > 0 ? endH + 1 : endH,
+        label: b.label || b.type,
+        type: b.type === "meetings" ? "admin" : b.type,
+        icon: iconMap[b.type] || "☕",
+      });
+    }
+    return zones;
+  }
+
+  // Fallback to legacy morning_focus / afternoon_tasks
   const mf = routine.morning_focus as any;
   const af = routine.afternoon_tasks as any;
   const es = routine.email_slots as any;
@@ -224,7 +246,11 @@ const GlobalPlanning = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       const skipped = data.skipped_count > 0 ? ` (${data.skipped_count} reportées)` : '';
-      toast.success(`${data.planned} tâches planifiées par l'IA !${skipped} 🤖`);
+      const routineInfo = data.routine_used ? ` · Routine: ${data.routine_used}` : '';
+      toast.success(`${data.planned} tâches planifiées par l'IA !${skipped}${routineInfo} 🤖`);
+      if (data.placement_summary) {
+        toast.info(data.placement_summary, { duration: 5000 });
+      }
       qc.invalidateQueries({ queryKey: ["calendar_events"] });
       qc.invalidateQueries({ queryKey: ["tasks"] });
     } catch (e: any) { toast.error(e.message || "Erreur d'auto-planification"); }
