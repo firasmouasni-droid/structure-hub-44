@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_settings: {
+        Row: {
+          audit_hour: number
+          created_at: string
+          enabled: boolean
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          audit_hour?: number
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          audit_hour?: number
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       badges: {
         Row: {
           category: string
@@ -134,6 +158,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      daily_audits: {
+        Row: {
+          audit_date: string
+          cognitive_availability: string
+          created_at: string
+          day_objective: string
+          distraction_level: string
+          energy_level: number
+          id: string
+          mental_clarity: string
+          mood: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          audit_date?: string
+          cognitive_availability?: string
+          created_at?: string
+          day_objective?: string
+          distraction_level?: string
+          energy_level?: number
+          id?: string
+          mental_clarity?: string
+          mood?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          audit_date?: string
+          cognitive_availability?: string
+          created_at?: string
+          day_objective?: string
+          distraction_level?: string
+          energy_level?: number
+          id?: string
+          mental_clarity?: string
+          mood?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       estimation_coefficients: {
         Row: {

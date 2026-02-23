@@ -74,6 +74,49 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const structureFilter = body.structure_id || null;
 
+    // 0. Get today's morning audit for adaptive planning
+    const { data: auditData } = await supabase
+      .from("daily_audits")
+      .select("*")
+      .eq("audit_date", today)
+      .maybeSingle();
+
+    // Compute adaptation rules from audit
+    let adaptRules = {
+      maxDeepWorkMin: 120,
+      blockDurationMode: "normal" as "short" | "normal" | "long",
+      capacityMultiplier: 1.0,
+      priorityMode: "normal" as "impact" | "easy_first" | "normal" | "low_friction",
+      planningNote: "",
+    };
+
+    if (auditData) {
+      // Energy
+      if (auditData.energy_level >= 4) { adaptRules.maxDeepWorkMin = 240; adaptRules.planningNote += "Énergie haute → deep work prolongé. "; }
+      else if (auditData.energy_level <= 2) { adaptRules.maxDeepWorkMin = 60; adaptRules.planningNote += "Énergie basse → deep work limité à 1h. "; }
+
+      // Mental clarity
+      if (auditData.mental_clarity === "fog") { adaptRules.priorityMode = "easy_first"; adaptRules.planningNote += "Brume mentale → tâches simples d'abord. "; }
+      else if (auditData.mental_clarity === "clear") { adaptRules.priorityMode = "impact"; adaptRules.planningNote += "Clarté → tâches importantes le matin. "; }
+
+      // Mood
+      if (auditData.mood === "stressed" || auditData.mood === "anxious") { adaptRules.capacityMultiplier = 0.7; adaptRules.priorityMode = "easy_first"; adaptRules.planningNote += "Stress → planning allégé. "; }
+      else if (auditData.mood === "motivated") { adaptRules.priorityMode = "impact"; adaptRules.planningNote += "Motivé → impact max. "; }
+
+      // Distraction
+      if (auditData.distraction_level === "scattered" || auditData.distraction_level === "distracted") { adaptRules.blockDurationMode = "short"; adaptRules.planningNote += "Distrait → blocs Pomodoro courts. "; }
+      else if (auditData.distraction_level === "focus") { adaptRules.blockDurationMode = "long"; adaptRules.planningNote += "Concentré → blocs longs. "; }
+
+      // Objective
+      if (auditData.day_objective === "productivity") { adaptRules.priorityMode = "impact"; }
+      else if (auditData.day_objective === "recovery") { adaptRules.capacityMultiplier = 0.5; adaptRules.planningNote += "Récupération → 50% capacité. "; }
+      else if (auditData.day_objective === "slow") { adaptRules.priorityMode = "low_friction"; adaptRules.planningNote += "Tranquille → next actions simples. "; }
+
+      // Cognitive
+      if (auditData.cognitive_availability === "<2h") { adaptRules.maxDeepWorkMin = Math.min(adaptRules.maxDeepWorkMin, 60); adaptRules.capacityMultiplier = Math.min(adaptRules.capacityMultiplier, 0.5); adaptRules.planningNote += "Dispo <2h → 1 tâche max. "; }
+      else if (auditData.cognitive_availability === ">4h") { adaptRules.maxDeepWorkMin = Math.max(adaptRules.maxDeepWorkMin, 240); adaptRules.planningNote += "Dispo >4h → deep work renforcé. "; }
+    }
+
     // 1. Get estimation coefficients (planning fallacy correction)
     const { data: coefficients } = await supabase.from("estimation_coefficients").select("*");
     const coeffMap: Record<string, number> = {};
@@ -144,13 +187,30 @@ serve(async (req) => {
       };
     }) || [];
 
-    // 7. Apply 65% capacity rule on total free time
-    const maxCapacity = Math.floor(totalFreeMinutes * 0.65);
+    // 7. Apply 65% capacity rule × audit adaptation multiplier
+    const baseCapacity = Math.floor(totalFreeMinutes * 0.65);
+    const maxCapacity = Math.floor(baseCapacity * adaptRules.capacityMultiplier);
 
-    // 8. Build the detailed prompt with block-aware placement rules
+    // 8. Build the detailed prompt with block-aware placement rules + audit context
     const blockRulesText = blockSlots.map(b =>
       `- ${b.label} (${b.start}-${b.end}, type: ${b.type}) → ${b.freeMinutes} min libres. Créneaux: ${b.freeSlots.map(s => `${s.start}-${s.end}`).join(", ") || "AUCUN (entièrement occupé)"}`
     ).join("\n");
+
+    const auditContext = auditData ? `
+AUDIT MATINAL DE L'UTILISATEUR :
+- Énergie physique: ${auditData.energy_level}/5
+- Clarté mentale: ${auditData.mental_clarity}
+- Humeur: ${auditData.mood}
+- Concentration: ${auditData.distraction_level}
+- Objectif: ${auditData.day_objective}
+- Dispo cognitive: ${auditData.cognitive_availability}
+
+ADAPTATIONS REQUISES :
+- Deep work max: ${adaptRules.maxDeepWorkMin} minutes
+- Mode blocs: ${adaptRules.blockDurationMode === "short" ? "COURTS (25 min Pomodoro)" : adaptRules.blockDurationMode === "long" ? "LONGS (60-90 min)" : "NORMAUX (45-60 min)"}
+- Priorité: ${adaptRules.priorityMode === "impact" ? "Impact MAX d'abord" : adaptRules.priorityMode === "easy_first" ? "Tâches SIMPLES d'abord (admin, quick)" : adaptRules.priorityMode === "low_friction" ? "Next actions simples, faible friction" : "Normal"}
+- Capacité ajustée: ${maxCapacity} min (${Math.round(adaptRules.capacityMultiplier * 100)}% de la normale)
+- Note: ${adaptRules.planningNote}` : "";
 
     const taskTypeMapping = `
 RÈGLES DE CORRESPONDANCE TÂCHE → BLOC :
@@ -179,6 +239,7 @@ BLOCS DE LA ROUTINE (avec disponibilité réelle après événements existants) 
 ${blockRulesText}
 
 ${taskTypeMapping}
+${auditContext}
 
 RÈGLES CRITIQUES :
 1. CAPACITÉ MAX: ${maxCapacity} minutes (65% de ${totalFreeMinutes} min libres)
@@ -305,6 +366,8 @@ Tâches à placer (triées par priorité): ${JSON.stringify(correctedTasks)}
       routine_type: routineType,
       placement_summary,
       blocks_info: blockSlots.map(b => ({ label: b.label, type: b.type, freeMinutes: b.freeMinutes })),
+      audit_applied: !!auditData,
+      audit_note: adaptRules.planningNote || null,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

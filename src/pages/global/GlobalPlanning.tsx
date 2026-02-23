@@ -1,13 +1,15 @@
 import { useCalendarEvents, useCalendarEventsRange, useUpdateCalendarEvent, CalendarEvent } from "@/hooks/useCalendarEvents";
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { useRoutines } from "@/hooks/useRoutines";
-import { CalendarDays, Sparkles, Loader2, ChevronLeft, ChevronRight, Compass } from "lucide-react";
+import { CalendarDays, Sparkles, Loader2, ChevronLeft, ChevronRight, Compass, Sun, Edit3 } from "lucide-react";
 import GuidedDayDialog from "@/components/guided/GuidedDayDialog";
+import MorningAuditDialog from "@/components/audit/MorningAuditDialog";
 import PlanningBlock from "@/components/planning/PlanningBlock";
 import { CATEGORIES, CATEGORY_LIST, type TaskCategory, getCategoryColor } from "@/lib/categories";
+import { useTodayAudit, useAuditSettings, getAuditAdaptation } from "@/hooks/useDailyAudit";
 import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay, eachDayOfInterval, isToday, getDay } from "date-fns";
 import { fr } from "date-fns/locale";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard, FadeInSection } from "@/components/motion/MotionWrappers";
@@ -309,6 +311,21 @@ const GlobalPlanning = () => {
   const routineZones = getRoutineZones(routine);
   const unplannedTasks = allTasks.filter(t => !t.due_date && t.status !== "done" && !t.is_inbox);
   const [guidedOpen, setGuidedOpen] = useState(false);
+  const [auditOpen, setAuditOpen] = useState(false);
+
+  // Morning audit
+  const { data: todayAudit, isLoading: auditLoading } = useTodayAudit();
+  const { data: auditSettings } = useAuditSettings();
+  const auditAdaptation = todayAudit ? getAuditAdaptation(todayAudit) : null;
+
+  // Auto-show audit if not completed today and settings enabled
+  useEffect(() => {
+    if (auditLoading) return;
+    const isEnabled = auditSettings?.enabled !== false; // default enabled
+    if (isEnabled && !todayAudit) {
+      setAuditOpen(true);
+    }
+  }, [todayAudit, auditLoading, auditSettings]);
 
   const handleEventMove = useCallback((eventId: string, newHour: number) => {
     const event = events.find(e => e.id === eventId);
@@ -409,6 +426,10 @@ const GlobalPlanning = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setAuditOpen(true)} className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl border text-sm font-bold transition-all ${todayAudit ? "border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/5" : "border-warning/30 text-warning hover:bg-warning/5"}`}>
+              <Sun className="w-4 h-4" />
+              {todayAudit ? "Modifier audit" : "Audit matinal"}
+            </motion.button>
             <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setGuidedOpen(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-primary/30 text-primary text-sm font-bold hover:bg-primary/5 transition-all">
               <Compass className="w-4 h-4" />
               Mode guidé
@@ -419,7 +440,27 @@ const GlobalPlanning = () => {
             </motion.button>
           </div>
           <GuidedDayDialog open={guidedOpen} onOpenChange={setGuidedOpen} />
+          <MorningAuditDialog open={auditOpen} onOpenChange={setAuditOpen} />
         </div>
+
+        {/* Adaptive planning banner */}
+        {todayAudit && auditAdaptation && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-3 px-4 py-3 rounded-2xl border"
+            style={{ backgroundColor: "#C5F4EE15", borderColor: "#4ADBC830" }}
+          >
+            <Sun className="w-5 h-5 shrink-0" style={{ color: "#4ADBC8" }} />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-foreground">Planning adapté selon votre état du jour</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{auditAdaptation.planningNote || "Planning normal"}</p>
+            </div>
+            <button onClick={() => setAuditOpen(true)} className="shrink-0 p-1.5 rounded-lg hover:bg-muted transition-colors">
+              <Edit3 className="w-3.5 h-3.5 text-muted-foreground" />
+            </button>
+          </motion.div>
+        )}
 
         {/* Tab bar + navigation arrows */}
         <div className="flex items-center gap-3">
