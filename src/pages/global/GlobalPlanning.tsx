@@ -1,11 +1,11 @@
-import { useCalendarEvents, useCalendarEventsRange, CalendarEvent } from "@/hooks/useCalendarEvents";
+import { useCalendarEvents, useCalendarEventsRange, useUpdateCalendarEvent, CalendarEvent } from "@/hooks/useCalendarEvents";
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { useRoutines } from "@/hooks/useRoutines";
 import { CalendarDays, Sparkles, Loader2, ChevronLeft, ChevronRight, Compass } from "lucide-react";
 import GuidedDayDialog from "@/components/guided/GuidedDayDialog";
 import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay, eachDayOfInterval, isToday, getDay } from "date-fns";
 import { fr } from "date-fns/locale";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard, FadeInSection } from "@/components/motion/MotionWrappers";
@@ -70,8 +70,11 @@ const ZONE_STYLES: Record<string, string> = {
 
 const DAY_NAMES_SHORT = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
-// ── Day view (hourly grid) ──
-function DayView({ events, routineZones }: { events: CalendarEvent[]; routineZones: ReturnType<typeof getRoutineZones> }) {
+// ── Day view (hourly grid) with drag-and-drop ──
+function DayView({ events, routineZones, onEventMove }: { events: CalendarEvent[]; routineZones: ReturnType<typeof getRoutineZones>; onEventMove?: (eventId: string, newHour: number) => void }) {
+  const [dragOverHour, setDragOverHour] = useState<number | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+
   const mappedEvents = events.map(e => {
     const startHour = new Date(e.start_time).getUTCHours();
     const startMin = new Date(e.start_time).getUTCMinutes();
@@ -81,25 +84,75 @@ function DayView({ events, routineZones }: { events: CalendarEvent[]; routineZon
 
   const getZoneForHour = (hour: number) => routineZones.find(z => hour >= z.start && hour < z.end);
 
+  const handleDragStart = (e: React.DragEvent, eventId: string) => {
+    e.dataTransfer.setData("text/plain", eventId);
+    e.dataTransfer.effectAllowed = "move";
+    setDraggingId(eventId);
+  };
+
+  const handleDragOver = (e: React.DragEvent, hour: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverHour(hour);
+  };
+
+  const handleDrop = (e: React.DragEvent, hour: number) => {
+    e.preventDefault();
+    const eventId = e.dataTransfer.getData("text/plain");
+    if (eventId && onEventMove) onEventMove(eventId, hour);
+    setDragOverHour(null);
+    setDraggingId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDragOverHour(null);
+    setDraggingId(null);
+  };
+
   return (
     <div className="card-soft overflow-hidden">
       {hours.map((hour, idx) => {
         const zone = getZoneForHour(hour);
         const zoneStyle = zone ? ZONE_STYLES[zone.type] || "" : "";
         const isZoneStart = zone && hour === zone.start;
+        const isDropTarget = dragOverHour === hour;
         return (
-          <motion.div key={hour} className={`flex border-b border-border/20 last:border-0 ${zoneStyle}`} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.02, duration: 0.3 }}>
+          <motion.div
+            key={hour}
+            className={`flex border-b border-border/20 last:border-0 ${zoneStyle} ${isDropTarget ? "bg-primary/10 ring-1 ring-primary/30" : ""} transition-colors`}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: idx * 0.02, duration: 0.3 }}
+            onDragOver={(e) => handleDragOver(e, hour)}
+            onDragLeave={() => setDragOverHour(null)}
+            onDrop={(e) => handleDrop(e, hour)}
+          >
             <div className="w-16 py-5 text-right pr-4 text-xs text-muted-foreground shrink-0 font-semibold">
               {hour}:00
               {isZoneStart && <div className="text-[9px] mt-0.5 opacity-60">{zone.icon} {zone.label}</div>}
             </div>
             <div className="flex-1 relative min-h-[64px] border-l border-border/20">
               {mappedEvents.filter(e => e.startHour === hour).map((event, i) => (
-                <motion.div key={i} className="absolute left-2 right-2 rounded-2xl px-4 py-2.5 border bg-primary/12 border-primary/20 text-primary z-10" style={{ height: `${Math.max(event.durationHours * 64, 40)}px`, top: `${event.startMin}px` }} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 + i * 0.1 }}>
+                <motion.div
+                  key={i}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e as any, event.id)}
+                  onDragEnd={handleDragEnd}
+                  className={`absolute left-2 right-2 rounded-2xl px-4 py-2.5 border bg-primary/12 border-primary/20 text-primary z-10 cursor-grab active:cursor-grabbing select-none ${draggingId === event.id ? "opacity-40 scale-95" : ""} transition-all`}
+                  style={{ height: `${Math.max(event.durationHours * 64, 40)}px`, top: `${event.startMin}px` }}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: draggingId === event.id ? 0.4 : 1, scale: draggingId === event.id ? 0.95 : 1 }}
+                  transition={{ delay: 0.3 + i * 0.1 }}
+                >
                   <p className="text-xs font-bold truncate">{event.title}</p>
                   <p className="text-[11px] opacity-70">{event.durationHours.toFixed(1)}h · {event.source === "ai" ? "IA" : event.source}</p>
                 </motion.div>
               ))}
+              {isDropTarget && mappedEvents.filter(e => e.startHour === hour).length === 0 && (
+                <div className="absolute inset-2 rounded-2xl border-2 border-dashed border-primary/30 flex items-center justify-center">
+                  <p className="text-[10px] text-primary/50 font-medium">Déposer ici</p>
+                </div>
+              )}
             </div>
           </motion.div>
         );
@@ -235,11 +288,27 @@ const GlobalPlanning = () => {
   const { data: allTasks = [] } = useTasks();
   const { data: routines = [] } = useRoutines();
   const updateTask = useUpdateTask();
+  const updateEvent = useUpdateCalendarEvent();
 
   const routine = routines.find(r => !r.structure_id) || routines[0] || null;
   const routineZones = getRoutineZones(routine);
   const unplannedTasks = allTasks.filter(t => !t.due_date && t.status !== "done" && !t.is_inbox);
   const [guidedOpen, setGuidedOpen] = useState(false);
+
+  const handleEventMove = useCallback((eventId: string, newHour: number) => {
+    const event = events.find(e => e.id === eventId);
+    if (!event) return;
+    const oldStart = new Date(event.start_time);
+    const oldEnd = new Date(event.end_time);
+    const durationMs = oldEnd.getTime() - oldStart.getTime();
+    const newStart = new Date(oldStart);
+    newStart.setUTCHours(newHour, 0, 0, 0);
+    const newEnd = new Date(newStart.getTime() + durationMs);
+    updateEvent.mutate(
+      { id: eventId, start_time: newStart.toISOString(), end_time: newEnd.toISOString() },
+      { onSuccess: () => toast.success("Événement déplacé !"), onError: () => toast.error("Erreur lors du déplacement") }
+    );
+  }, [events, updateEvent]);
 
   const handleAutoplan = async () => {
     setAutoplanning(true);
@@ -346,10 +415,10 @@ const GlobalPlanning = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <FadeInSection className="lg:col-span-3">
             {selectedDay ? (
-              <DayView events={events} routineZones={routineZones} />
+              <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} />
             ) : (
               <>
-                {activeTab === "today" && <DayView events={events} routineZones={routineZones} />}
+                {activeTab === "today" && <DayView events={events} routineZones={routineZones} onEventMove={handleEventMove} />}
                 {activeTab === "week" && <WeekView events={events} weekStart={startOfWeek(currentDate, { weekStartsOn: 1 })} onDayClick={handleDayClick} />}
                 {activeTab === "month" && <MonthView events={events} currentDate={currentDate} onDayClick={handleDayClick} />}
               </>
