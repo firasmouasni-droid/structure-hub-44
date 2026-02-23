@@ -98,12 +98,13 @@ const Home = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <div className="space-y-4">
+              {/* Row 1: Avatar + Greeting */}
+              <div className="flex items-center gap-4">
                 <div className="relative shrink-0">
                   <motion.button
                     onClick={() => setAvatarMenuOpen(prev => !prev)}
-                    className="w-12 h-12 sm:w-16 sm:h-16 rounded-3xl overflow-hidden shadow-soft cursor-pointer border-2 border-primary/20 hover:border-primary/50 transition-colors"
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-3xl overflow-hidden shadow-soft cursor-pointer border-2 border-primary/20 hover:border-primary/50 transition-colors"
                     initial={{ scale: 0, rotate: -180 }}
                     animate={{ scale: 1, rotate: 0 }}
                     transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
@@ -114,7 +115,7 @@ const Home = () => {
                       <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full gradient-primary flex items-center justify-center">
-                        <User className="w-6 h-6 sm:w-8 sm:h-8 text-primary-foreground" />
+                        <User className="w-7 h-7 text-primary-foreground" />
                       </div>
                     )}
                   </motion.button>
@@ -154,40 +155,47 @@ const Home = () => {
                     )}
                   </AnimatePresence>
                 </div>
-                <div className="min-w-0">
-                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
                     Hello, {profile?.display_name || "toi"} 👋
                   </h1>
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 capitalize truncate">
-                    {format(new Date(), "EEEE d MMMM", { locale: fr })} · {(() => {
-                      const hour = new Date().getHours();
-                      if (hour < 12) return "Prêt à conquérir cette matinée ?";
-                      if (hour < 17) return "L'après-midi est à toi, fonce !";
-                      return "Belle soirée pour faire le point ✨";
-                    })()}
+                  <p className="text-sm text-muted-foreground mt-1 capitalize">
+                    {format(new Date(), "EEEE d MMMM yyyy", { locale: fr })}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setAuditOpen(true)}
-                  className="pill p-2 sm:px-4 sm:py-2 bg-card/70 backdrop-blur-sm shadow-soft flex items-center gap-2 cursor-pointer hover:bg-primary/10 transition-all"
-                >
-                  <Sun className="w-4 h-4 text-warning" />
-                  <span className="text-xs font-bold text-foreground hidden sm:inline">Check-in</span>
-                </motion.button>
-                <ThemeToggle />
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => signOut()}
-                  className="pill p-2 bg-card/70 backdrop-blur-sm shadow-soft cursor-pointer hover:bg-destructive/10 transition-all"
-                  title="Se déconnecter"
-                >
-                  <LogOut className="w-4 h-4 text-muted-foreground" />
-                </motion.button>
+
+              {/* Row 2: Motivation + Actions */}
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs sm:text-sm text-muted-foreground italic">
+                  {(() => {
+                    const hour = new Date().getHours();
+                    if (hour < 12) return "☀️ Prêt à conquérir cette matinée ?";
+                    if (hour < 17) return "🚀 L'après-midi est à toi, fonce !";
+                    return "✨ Belle soirée pour faire le point";
+                  })()}
+                </p>
+                <div className="flex items-center gap-2 shrink-0">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setAuditOpen(true)}
+                    className="pill px-3 py-2 bg-card/70 backdrop-blur-sm shadow-soft flex items-center gap-2 cursor-pointer hover:bg-primary/10 transition-all"
+                  >
+                    <Sun className="w-4 h-4 text-warning" />
+                    <span className="text-xs font-bold text-foreground">Check-in</span>
+                  </motion.button>
+                  <ThemeToggle />
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => signOut()}
+                    className="pill p-2 bg-card/70 backdrop-blur-sm shadow-soft cursor-pointer hover:bg-destructive/10 transition-all"
+                    title="Se déconnecter"
+                  >
+                    <LogOut className="w-4 h-4 text-muted-foreground" />
+                  </motion.button>
+                </div>
               </div>
             </div>
           </motion.div>
