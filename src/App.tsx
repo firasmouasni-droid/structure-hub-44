@@ -29,6 +29,7 @@ import StructureSources from "./pages/structure/StructureSources";
 import StructureRoutines from "./pages/structure/StructureRoutines";
 import StructureCoach from "./pages/structure/StructureCoach";
 import SettingsPage from "./pages/SettingsPage";
+import ProfilePage from "./pages/ProfilePage";
 import NotFound from "./pages/NotFound";
 import SpaceRouter from "./pages/SpaceRouter";
 import LifeHQ from "./pages/global/LifeHQ";
@@ -83,6 +84,7 @@ const AnimatedRoutes = () => {
         <Route path="/structures/:id/routines" element={<ProtectedRoute><StructureLayout><StructureRoutines /></StructureLayout></ProtectedRoute>} />
         <Route path="/structures/:id/coach" element={<ProtectedRoute><StructureLayout><StructureCoach /></StructureLayout></ProtectedRoute>} />
 
+        <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><AppLayout><SettingsPage /></AppLayout></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
