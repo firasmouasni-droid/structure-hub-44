@@ -1,10 +1,14 @@
 import AppLayout from "@/components/layout/AppLayout";
-import { mockTasks, mockStructures } from "@/data/mockData";
+import { useStructures } from "@/hooks/useStructures";
+import { useTasks } from "@/hooks/useTasks";
+import { useUserStats } from "@/hooks/useUserStats";
 import {
   Zap, TrendingUp, Flame, Trophy, CheckCircle2,
   ArrowRight, Bot, Clock, CalendarDays
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 const actionTypeColors: Record<string, string> = {
   CALL: "bg-warning/10 text-warning",
@@ -20,9 +24,36 @@ const actionTypeColors: Record<string, string> = {
 };
 
 const Dashboard = () => {
-  const todayTasks = mockTasks.filter(t => t.due_date === "Aujourd'hui");
-  const completedToday = 5;
-  const totalToday = 8;
+  const { data: structures = [] } = useStructures();
+  const { data: allTasks = [] } = useTasks({ isInbox: false });
+  const { data: stats } = useUserStats();
+
+  const today = new Date().toISOString().split("T")[0];
+  const todayTasks = allTasks.filter(t => t.due_date === today);
+  const completedToday = todayTasks.filter(t => t.status === "done").length;
+  const totalToday = todayTasks.length;
+  const score = totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0;
+  const plannedMinutes = todayTasks.reduce((sum, t) => sum + (t.estimated_duration || 0), 0);
+  const meetingsToday = todayTasks.filter(t => t.action_type === "MEETING").length;
+
+  const xp = stats?.xp ?? 0;
+  const level = stats?.level ?? 1;
+  const streak = stats?.streak_days ?? 0;
+  const xpForNextLevel = level * 1000;
+  const xpInLevel = xp - (level - 1) * 1000;
+  const xpPercent = Math.round((xpInLevel / 1000) * 100);
+
+  const dateStr = format(new Date(), "EEEE d MMMM", { locale: fr });
+
+  // Compute per-structure stats
+  const structureStats = structures.map(s => {
+    const sTasks = allTasks.filter(t => t.structure_id === s.id);
+    const sToday = sTasks.filter(t => t.due_date === today);
+    const sDone = sTasks.filter(t => t.status === "done").length;
+    const progress = sTasks.length > 0 ? Math.round((sDone / sTasks.length) * 100) : 0;
+    const charge = sTasks.filter(t => t.status !== "done").length;
+    return { ...s, tasksToday: sToday.length, tasksTotal: sTasks.length, progress, charge };
+  });
 
   return (
     <AppLayout>
@@ -30,47 +61,44 @@ const Dashboard = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Bonjour, Alexandre 👋</h1>
+            <h1 className="text-2xl font-bold text-foreground">Bonjour 👋</h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Lundi 24 février — 5 tâches aujourd'hui, 2 en cours
+              {dateStr} — {totalToday} tâches aujourd'hui, {todayTasks.filter(t => t.status === "in_progress").length} en cours
             </p>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-warning/10">
               <Flame className="w-4 h-4 text-warning" />
-              <span className="text-sm font-semibold text-warning">12 jours</span>
+              <span className="text-sm font-semibold text-warning">{streak} jours</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/10">
               <Trophy className="w-4 h-4 text-secondary" />
-              <span className="text-sm font-semibold text-secondary">Niv. 12</span>
+              <span className="text-sm font-semibold text-secondary">Niv. {level}</span>
             </div>
           </div>
         </div>
 
         {/* Score + Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* Score Card */}
           <div className="md:col-span-1 rounded-xl gradient-primary p-5 text-primary-foreground card-shadow">
             <div className="flex items-center gap-2 mb-3">
               <Zap className="w-5 h-5" />
               <span className="text-sm font-medium opacity-90">Score du jour</span>
             </div>
-            <div className="text-4xl font-bold">87</div>
+            <div className="text-4xl font-bold">{score}</div>
             <div className="flex items-center gap-1.5 mt-2 text-sm opacity-80">
               <TrendingUp className="w-4 h-4" />
-              <span>+12% vs hier</span>
+              <span>{completedToday}/{totalToday} complétées</span>
             </div>
           </div>
 
-          {/* Stats */}
           <StatCard icon={<CheckCircle2 className="w-5 h-5 text-success" />} label="Complétées" value={`${completedToday}/${totalToday}`} sub="aujourd'hui" />
-          <StatCard icon={<Clock className="w-5 h-5 text-primary" />} label="Temps planifié" value="4h30" sub="sur 8h" />
-          <StatCard icon={<CalendarDays className="w-5 h-5 text-secondary" />} label="Réunions" value="2" sub="prochaine à 14h" />
+          <StatCard icon={<Clock className="w-5 h-5 text-primary" />} label="Temps planifié" value={`${Math.floor(plannedMinutes / 60)}h${plannedMinutes % 60 > 0 ? (plannedMinutes % 60).toString().padStart(2, '0') : ''}`} sub={`${todayTasks.length} tâches`} />
+          <StatCard icon={<CalendarDays className="w-5 h-5 text-secondary" />} label="Réunions" value={String(meetingsToday)} sub="aujourd'hui" />
         </div>
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Tasks Today */}
           <div className="lg:col-span-2 bg-card rounded-xl border border-border p-5 card-shadow">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-foreground">Tâches du jour</h2>
@@ -79,25 +107,29 @@ const Dashboard = () => {
               </Link>
             </div>
             <div className="space-y-2">
-              {todayTasks.map((task) => (
-                <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors group">
-                  <div className={`w-2 h-2 rounded-full ${task.structureColor}`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{task.title}</p>
-                    <p className="text-xs text-muted-foreground">{task.structure} · {task.estimated_duration}</p>
+              {todayTasks.length === 0 && <p className="text-sm text-muted-foreground py-4 text-center">Aucune tâche planifiée aujourd'hui</p>}
+              {todayTasks.map((task) => {
+                const structure = structures.find(s => s.id === task.structure_id);
+                return (
+                  <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors group">
+                    <div className={`w-2 h-2 rounded-full ${structure?.color || 'bg-muted'}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{task.action_label}</p>
+                      <p className="text-xs text-muted-foreground">{structure?.name} · {task.estimated_duration ? `${task.estimated_duration} min` : '-'}</p>
+                    </div>
+                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${actionTypeColors[task.action_type] || 'bg-muted text-muted-foreground'}`}>
+                      {task.action_type}
+                    </span>
+                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
+                      task.priority === "high" ? "bg-destructive/10 text-destructive" :
+                      task.priority === "medium" ? "bg-warning/10 text-warning" :
+                      "bg-muted text-muted-foreground"
+                    }`}>
+                      {task.priority}
+                    </span>
                   </div>
-                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${actionTypeColors[task.action_type]}`}>
-                    {task.action_type}
-                  </span>
-                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
-                    task.priority === "high" ? "bg-destructive/10 text-destructive" :
-                    task.priority === "medium" ? "bg-warning/10 text-warning" :
-                    "bg-muted text-muted-foreground"
-                  }`}>
-                    {task.priority}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -110,9 +142,9 @@ const Dashboard = () => {
               <h2 className="text-base font-semibold text-foreground">Coach IA</h2>
             </div>
             <div className="space-y-3">
-              <AISuggestion text="Tu as 2 tâches urgentes non planifiées. Veux-tu que je les place dans ton agenda ?" />
-              <AISuggestion text="Ta charge Pro est à 85%. Pense à déléguer ou reporter des tâches non critiques." />
-              <AISuggestion text="🔥 12 jours de streak ! Continue comme ça pour débloquer le badge 'Productivité Machine'." />
+              {/* TODO: Replace with AI-generated suggestions */}
+              <AISuggestion text={`Tu as ${todayTasks.filter(t => t.status === 'todo').length} tâches à faire aujourd'hui. Veux-tu que je les priorise ?`} />
+              <AISuggestion text={`🔥 ${streak} jours de streak ! Continue comme ça !`} />
             </div>
             <Link to="/coach" className="mt-4 block">
               <button className="w-full py-2.5 rounded-lg gradient-ai text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
@@ -126,7 +158,7 @@ const Dashboard = () => {
         <div>
           <h2 className="text-base font-semibold text-foreground mb-4">Mes Structures</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {mockStructures.map((s) => (
+            {structureStats.map((s) => (
               <Link key={s.id} to={`/structure/${s.id}`} className="bg-card rounded-xl border border-border p-4 card-shadow hover:card-shadow-hover transition-shadow group">
                 <div className="flex items-center gap-3 mb-3">
                   <div className={`w-3 h-3 rounded-full ${s.color}`} />
@@ -141,7 +173,7 @@ const Dashboard = () => {
                     <div className={`h-full rounded-full ${s.color}`} style={{ width: `${s.progress}%` }} />
                   </div>
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Charge: {s.charge}%</span>
+                    <span>Charge: {s.charge}</span>
                     <span>{s.tasksTotal} total</span>
                   </div>
                 </div>
@@ -157,13 +189,13 @@ const Dashboard = () => {
               <Trophy className="w-5 h-5 text-secondary" />
               <h2 className="text-base font-semibold text-foreground">Progression</h2>
             </div>
-            <span className="text-sm text-muted-foreground">2,450 / 3,000 XP</span>
+            <span className="text-sm text-muted-foreground">{xp.toLocaleString()} / {xpForNextLevel.toLocaleString()} XP</span>
           </div>
           <div className="h-3 bg-muted rounded-full overflow-hidden mb-3">
-            <div className="h-full gradient-xp rounded-full" style={{ width: "82%" }} />
+            <div className="h-full gradient-xp rounded-full" style={{ width: `${xpPercent}%` }} />
           </div>
           <div className="flex gap-3 flex-wrap">
-            <Badge icon="🔥" label="Streak 12j" />
+            <Badge icon="🔥" label={`Streak ${streak}j`} />
             <Badge icon="⚡" label="Speed Runner" />
             <Badge icon="📧" label="Email Master" />
             <Badge icon="🎯" label="Focus Pro" />
