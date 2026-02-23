@@ -100,7 +100,7 @@ export function useUpdateCalendarEventDetails() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, title, category, start_time, end_time }: { id: string; title: string; category: string; start_time?: string; end_time?: string }) => {
-      const updates: Record<string, string> = { title, category };
+      const updates: any = { title, category };
       if (start_time) updates.start_time = start_time;
       if (end_time) updates.end_time = end_time;
       const { data, error } = await supabase
