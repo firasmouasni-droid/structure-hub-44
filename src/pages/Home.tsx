@@ -1,6 +1,6 @@
 import { useStructures, useCreateStructure } from "@/hooks/useStructures";
 import { useLifeSpaces } from "@/hooks/useLifeSpaces";
-import { Plus, Brain, ArrowRight, CheckSquare, Calendar, Bot, Lock, Sun, CalendarDays, AlertTriangle, Circle, CheckCircle2 } from "lucide-react";
+import { Plus, Brain, ArrowRight, CheckSquare, Calendar, Bot, Lock, Sun, CalendarDays, AlertTriangle, Circle, CheckCircle2, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -14,6 +14,7 @@ import WelcomeOnboarding from "@/components/onboarding/WelcomeOnboarding";
 import MorningAuditDialog from "@/components/audit/MorningAuditDialog";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useAuth } from "@/hooks/useAuth";
 
 const COLORS = [
   { label: "Lavande", value: "bg-primary" },
@@ -24,6 +25,7 @@ const COLORS = [
 ];
 
 const Home = () => {
+  const { profile, signOut } = useAuth();
   const { data: structures = [], isLoading: structuresLoading } = useStructures();
   const { data: lifeSpaces = [], isLoading: spacesLoading } = useLifeSpaces();
   const { data: allTasks = [] } = useTasks({ isInbox: false });
@@ -105,9 +107,16 @@ const Home = () => {
                   <Brain className="w-6 h-6 sm:w-8 sm:h-8 text-primary-foreground" />
                 </motion.div>
                 <div className="min-w-0">
-                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Bonjour 👋</h1>
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">
+                    Hello, {profile?.display_name || "toi"} 👋
+                  </h1>
                   <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 capitalize truncate">
-                    {format(new Date(), "EEEE d MMMM", { locale: fr })} · Pilote ta vie, un espace à la fois
+                    {format(new Date(), "EEEE d MMMM", { locale: fr })} · {(() => {
+                      const hour = new Date().getHours();
+                      if (hour < 12) return "Prêt à conquérir cette matinée ?";
+                      if (hour < 17) return "L'après-midi est à toi, fonce !";
+                      return "Belle soirée pour faire le point ✨";
+                    })()}
                   </p>
                 </div>
               </div>
@@ -122,6 +131,15 @@ const Home = () => {
                   <span className="text-xs font-bold text-foreground hidden sm:inline">Check-in</span>
                 </motion.button>
                 <ThemeToggle />
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => signOut()}
+                  className="pill p-2 bg-card/70 backdrop-blur-sm shadow-soft cursor-pointer hover:bg-destructive/10 transition-all"
+                  title="Se déconnecter"
+                >
+                  <LogOut className="w-4 h-4 text-muted-foreground" />
+                </motion.button>
               </div>
             </div>
           </motion.div>

@@ -2,11 +2,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import AppLayout from "@/components/layout/AppLayout";
 import StructureLayout from "@/components/layout/StructureLayout";
 import Home from "./pages/Home";
+import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import GlobalDashboard from "./pages/global/GlobalDashboard";
 import GlobalTasks from "./pages/global/GlobalTasks";
 import GlobalInbox from "./pages/global/GlobalInbox";
@@ -32,44 +35,55 @@ import LifeHQ from "./pages/global/LifeHQ";
 
 const queryClient = new QueryClient();
 
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { session, loading } = useAuth();
+  if (loading) return null;
+  if (!session) return <Navigate to="/auth" replace />;
+  return <>{children}</>;
+};
+
 const AnimatedRoutes = () => {
   const location = useLocation();
 
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
+        {/* Auth */}
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+
         {/* Home — no layout */}
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
 
         {/* QG Général — Life cockpit */}
-        <Route path="/life-hq" element={<AppLayout><LifeHQ /></AppLayout>} />
+        <Route path="/life-hq" element={<ProtectedRoute><AppLayout><LifeHQ /></AppLayout></ProtectedRoute>} />
 
         {/* Life Spaces */}
-        <Route path="/spaces/:spaceKey" element={<SpaceRouter />} />
+        <Route path="/spaces/:spaceKey" element={<ProtectedRoute><SpaceRouter /></ProtectedRoute>} />
 
         {/* Global HQ — AppLayout with sidebar */}
-        <Route path="/global/dashboard" element={<AppLayout><GlobalDashboard /></AppLayout>} />
-        <Route path="/global/tasks" element={<AppLayout><GlobalTasks /></AppLayout>} />
-        <Route path="/global/inbox" element={<AppLayout><GlobalInbox /></AppLayout>} />
-        <Route path="/global/planning" element={<AppLayout><GlobalPlanning /></AppLayout>} />
-        <Route path="/global/objectives" element={<AppLayout><GlobalObjectives /></AppLayout>} />
-        <Route path="/global/sources" element={<AppLayout><GlobalSources /></AppLayout>} />
-        <Route path="/global/routines" element={<AppLayout><GlobalRoutines /></AppLayout>} />
-        <Route path="/global/coach" element={<AppLayout><GlobalCoach /></AppLayout>} />
-        <Route path="/global/analytics" element={<AppLayout><GlobalAnalytics /></AppLayout>} />
-        <Route path="/global/gamification" element={<AppLayout><GlobalGamification /></AppLayout>} />
+        <Route path="/global/dashboard" element={<ProtectedRoute><AppLayout><GlobalDashboard /></AppLayout></ProtectedRoute>} />
+        <Route path="/global/tasks" element={<ProtectedRoute><AppLayout><GlobalTasks /></AppLayout></ProtectedRoute>} />
+        <Route path="/global/inbox" element={<ProtectedRoute><AppLayout><GlobalInbox /></AppLayout></ProtectedRoute>} />
+        <Route path="/global/planning" element={<ProtectedRoute><AppLayout><GlobalPlanning /></AppLayout></ProtectedRoute>} />
+        <Route path="/global/objectives" element={<ProtectedRoute><AppLayout><GlobalObjectives /></AppLayout></ProtectedRoute>} />
+        <Route path="/global/sources" element={<ProtectedRoute><AppLayout><GlobalSources /></AppLayout></ProtectedRoute>} />
+        <Route path="/global/routines" element={<ProtectedRoute><AppLayout><GlobalRoutines /></AppLayout></ProtectedRoute>} />
+        <Route path="/global/coach" element={<ProtectedRoute><AppLayout><GlobalCoach /></AppLayout></ProtectedRoute>} />
+        <Route path="/global/analytics" element={<ProtectedRoute><AppLayout><GlobalAnalytics /></AppLayout></ProtectedRoute>} />
+        <Route path="/global/gamification" element={<ProtectedRoute><AppLayout><GlobalGamification /></AppLayout></ProtectedRoute>} />
 
         {/* Structure spaces — StructureLayout with topbar */}
-        <Route path="/structures/:id/dashboard" element={<StructureLayout><StructureDashboard /></StructureLayout>} />
-        <Route path="/structures/:id/tasks" element={<StructureLayout><StructureTasks /></StructureLayout>} />
-        <Route path="/structures/:id/inbox" element={<StructureLayout><StructureInbox /></StructureLayout>} />
-        <Route path="/structures/:id/planning" element={<StructureLayout><StructurePlanning /></StructureLayout>} />
-        <Route path="/structures/:id/objectives" element={<StructureLayout><StructureObjectives /></StructureLayout>} />
-        <Route path="/structures/:id/sources" element={<StructureLayout><StructureSources /></StructureLayout>} />
-        <Route path="/structures/:id/routines" element={<StructureLayout><StructureRoutines /></StructureLayout>} />
-        <Route path="/structures/:id/coach" element={<StructureLayout><StructureCoach /></StructureLayout>} />
+        <Route path="/structures/:id/dashboard" element={<ProtectedRoute><StructureLayout><StructureDashboard /></StructureLayout></ProtectedRoute>} />
+        <Route path="/structures/:id/tasks" element={<ProtectedRoute><StructureLayout><StructureTasks /></StructureLayout></ProtectedRoute>} />
+        <Route path="/structures/:id/inbox" element={<ProtectedRoute><StructureLayout><StructureInbox /></StructureLayout></ProtectedRoute>} />
+        <Route path="/structures/:id/planning" element={<ProtectedRoute><StructureLayout><StructurePlanning /></StructureLayout></ProtectedRoute>} />
+        <Route path="/structures/:id/objectives" element={<ProtectedRoute><StructureLayout><StructureObjectives /></StructureLayout></ProtectedRoute>} />
+        <Route path="/structures/:id/sources" element={<ProtectedRoute><StructureLayout><StructureSources /></StructureLayout></ProtectedRoute>} />
+        <Route path="/structures/:id/routines" element={<ProtectedRoute><StructureLayout><StructureRoutines /></StructureLayout></ProtectedRoute>} />
+        <Route path="/structures/:id/coach" element={<ProtectedRoute><StructureLayout><StructureCoach /></StructureLayout></ProtectedRoute>} />
 
-        <Route path="/settings" element={<AppLayout><SettingsPage /></AppLayout>} />
+        <Route path="/settings" element={<ProtectedRoute><AppLayout><SettingsPage /></AppLayout></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AnimatePresence>
@@ -82,7 +96,9 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AnimatedRoutes />
+        <AuthProvider>
+          <AnimatedRoutes />
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
