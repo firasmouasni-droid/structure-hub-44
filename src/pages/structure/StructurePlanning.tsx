@@ -39,7 +39,7 @@ const ZONE_STYLES: Record<string, string> = {
 };
 
 function DayView({ events, routineZones }: { events: CalendarEvent[]; routineZones: ReturnType<typeof getRoutineZones> }) {
-  const mappedEvents = events.map(e => ({ ...e, startHour: new Date(e.start_time).getHours(), startMin: new Date(e.start_time).getMinutes(), durationHours: (new Date(e.end_time).getTime() - new Date(e.start_time).getTime()) / 3600000 }));
+  const mappedEvents = events.map(e => ({ ...e, startHour: new Date(e.start_time).getUTCHours(), startMin: new Date(e.start_time).getUTCMinutes(), durationHours: (new Date(e.end_time).getTime() - new Date(e.start_time).getTime()) / 3600000 }));
   const getZoneForHour = (hour: number) => routineZones.find(z => hour >= z.start && hour < z.end);
 
   return (
@@ -93,7 +93,7 @@ function WeekView({ events, weekStart }: { events: CalendarEvent[]; weekStart: D
                 {dayEvents.map((event, i) => (
                   <div key={i} className="rounded-lg px-1.5 py-1 bg-primary/10 border border-primary/20 text-primary">
                     <p className="text-[10px] font-bold truncate">{event.title}</p>
-                    <p className="text-[9px] opacity-70">{format(new Date(event.start_time), "HH:mm")}</p>
+                    <p className="text-[9px] opacity-70">{`${String(new Date(event.start_time).getUTCHours()).padStart(2, '0')}:${String(new Date(event.start_time).getUTCMinutes()).padStart(2, '0')}`}</p>
                   </div>
                 ))}
                 {dayEvents.length === 0 && <p className="text-[10px] text-muted-foreground/50 text-center mt-4">—</p>}
