@@ -93,6 +93,36 @@ export type Database = {
           },
         ]
       }
+      estimation_coefficients: {
+        Row: {
+          action_type: string
+          coefficient: number
+          created_at: string
+          id: string
+          sample_count: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          action_type?: string
+          coefficient?: number
+          created_at?: string
+          id?: string
+          sample_count?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          coefficient?: number
+          created_at?: string
+          id?: string
+          sample_count?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       goals: {
         Row: {
           created_at: string
@@ -215,6 +245,8 @@ export type Database = {
         Row: {
           action_label: string
           action_type: string
+          actual_duration: number | null
+          computed_priority: number | null
           created_at: string
           domain: string | null
           due_date: string | null
@@ -222,15 +254,19 @@ export type Database = {
           estimated_duration: number | null
           external_link: string | null
           id: string
+          importance: number
           is_inbox: boolean
           priority: string
           source: string
           status: string
           structure_id: string
+          urgency: number
         }
         Insert: {
           action_label: string
           action_type?: string
+          actual_duration?: number | null
+          computed_priority?: number | null
           created_at?: string
           domain?: string | null
           due_date?: string | null
@@ -238,15 +274,19 @@ export type Database = {
           estimated_duration?: number | null
           external_link?: string | null
           id?: string
+          importance?: number
           is_inbox?: boolean
           priority?: string
           source?: string
           status?: string
           structure_id: string
+          urgency?: number
         }
         Update: {
           action_label?: string
           action_type?: string
+          actual_duration?: number | null
+          computed_priority?: number | null
           created_at?: string
           domain?: string | null
           due_date?: string | null
@@ -254,11 +294,13 @@ export type Database = {
           estimated_duration?: number | null
           external_link?: string | null
           id?: string
+          importance?: number
           is_inbox?: boolean
           priority?: string
           source?: string
           status?: string
           structure_id?: string
+          urgency?: number
         }
         Relationships: [
           {

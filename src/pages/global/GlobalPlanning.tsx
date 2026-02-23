@@ -34,7 +34,8 @@ const GlobalPlanning = () => {
       const { data, error } = await supabase.functions.invoke("autoplan", { body: {} });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast.success(`${data.planned} tâches planifiées par l'IA ! 🤖`);
+      const skipped = data.skipped_count > 0 ? ` (${data.skipped_count} reportées — capacité atteinte)` : '';
+      toast.success(`${data.planned} tâches planifiées par l'IA !${skipped} 🤖\nCapacité utilisée : ${data.capacity_used}/${data.max_capacity} min`);
       qc.invalidateQueries({ queryKey: ["calendar_events"] });
       qc.invalidateQueries({ queryKey: ["tasks"] });
     } catch (e: any) { toast.error(e.message || "Erreur d'auto-planification"); }

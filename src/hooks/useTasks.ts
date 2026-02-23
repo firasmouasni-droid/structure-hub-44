@@ -16,6 +16,10 @@ export interface Task {
   external_link: string | null;
   is_inbox: boolean;
   created_at: string;
+  importance: number;
+  urgency: number;
+  actual_duration: number | null;
+  computed_priority: number | null;
 }
 
 export interface TaskInsert {
@@ -31,7 +35,15 @@ export interface TaskInsert {
   email_id?: string | null;
   external_link?: string | null;
   is_inbox?: boolean;
+  importance?: number;
+  urgency?: number;
 }
+
+// WIP limits based on Kanban science
+export const WIP_LIMITS = {
+  perStructure: 3,
+  global: 5,
+} as const;
 
 export function useTasks(filters?: { structureId?: string; status?: string; isInbox?: boolean; dueDateToday?: boolean }) {
   return useQuery({
@@ -54,6 +66,35 @@ export function useTasks(filters?: { structureId?: string; status?: string; isIn
 
 export function useTasksByStructure(structureId: string) {
   return useTasks({ structureId });
+}
+
+export function useWIPStatus() {
+  const { data: allTasks = [] } = useTasks();
+
+  const inProgressTasks = allTasks.filter(t => t.status === "in_progress");
+  const globalWIP = inProgressTasks.length;
+  const globalExceeded = globalWIP > WIP_LIMITS.global;
+
+  // Group by structure
+  const byStructure: Record<string, number> = {};
+  for (const t of inProgressTasks) {
+    byStructure[t.structure_id] = (byStructure[t.structure_id] || 0) + 1;
+  }
+
+  const exceededStructures = Object.entries(byStructure)
+    .filter(([, count]) => count > WIP_LIMITS.perStructure)
+    .map(([id]) => id);
+
+  return {
+    globalWIP,
+    globalExceeded,
+    byStructure,
+    exceededStructures,
+    canStartNew: (structureId: string) => {
+      const structureWIP = byStructure[structureId] || 0;
+      return structureWIP < WIP_LIMITS.perStructure && globalWIP < WIP_LIMITS.global;
+    },
+  };
 }
 
 export function useCreateTask() {
