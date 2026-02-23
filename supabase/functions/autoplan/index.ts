@@ -6,57 +6,175 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-interface RoutineBlock {
-  type: string;
-  start: string;
-  end: string;
-  label: string;
-  days?: string[];
+// ── Helpers ──
+
+function toMin(timeStr: string): number {
+  const [h, m] = timeStr.split(":").map(Number);
+  return h * 60 + m;
 }
 
-function blockMinutes(block: RoutineBlock): number {
-  const [sh, sm] = block.start.split(":").map(Number);
-  const [eh, em] = block.end.split(":").map(Number);
-  return (eh * 60 + em) - (sh * 60 + sm);
+function minToStr(min: number): string {
+  return `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
 }
 
-function subtractOccupied(
-  blockStart: string, blockEnd: string, today: string,
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().split("T")[0];
+}
+
+function isWeekend(dateStr: string): boolean {
+  const d = new Date(dateStr + "T12:00:00Z");
+  const day = d.getUTCDay();
+  return day === 0 || day === 6;
+}
+
+function dayLabel(dateStr: string): string {
+  const days = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+  const d = new Date(dateStr + "T12:00:00Z");
+  return `${days[d.getUTCDay()]} ${d.getUTCDate()}/${d.getUTCMonth() + 1}`;
+}
+
+interface FreeSlot {
+  startMin: number;
+  endMin: number;
+}
+
+interface DayCapacity {
+  date: string;
+  totalAvailable: number;
+  maxSchedulable: number; // 70% of available
+  usedMinutes: number;
+  freeSlots: FreeSlot[];
+}
+
+/** Duration defaults by action_type */
+const DURATION_DEFAULTS: Record<string, number> = {
+  EMAIL: 15,
+  CALL: 20,
+  ADMIN: 30,
+  OTHER: 30,
+  PLAN: 45,
+  REVIEW: 45,
+  MEETING: 45,
+  WRITE: 60,
+  BUILD: 75,
+  LEARN: 60,
+};
+
+/** Max single-session duration by type */
+const MAX_SESSION: Record<string, number> = {
+  EMAIL: 30,
+  CALL: 45,
+  ADMIN: 45,
+  OTHER: 45,
+  PLAN: 60,
+  REVIEW: 60,
+  MEETING: 90,
+  WRITE: 90,
+  BUILD: 90,
+  LEARN: 75,
+};
+
+/** Preferred time-of-day: "morning" or "afternoon" or "any" */
+const PREFERRED_TIME: Record<string, string> = {
+  WRITE: "morning",
+  BUILD: "morning",
+  LEARN: "morning",
+  REVIEW: "morning",
+  EMAIL: "any",
+  CALL: "any",
+  ADMIN: "afternoon",
+  PLAN: "morning",
+  MEETING: "afternoon",
+  OTHER: "any",
+};
+
+/** Compute free slots for a day given work hours and existing events */
+function computeDayCapacity(
+  dateStr: string,
+  workStart: string, workEnd: string, pauseStart: string, pauseEnd: string,
   existingEvents: { start_time: string; end_time: string }[]
-): { start: string; end: string }[] {
-  const toMin = (t: string) => {
-    const d = new Date(t);
-    return d.getHours() * 60 + d.getMinutes();
-  };
-  const [bsH, bsM] = blockStart.split(":").map(Number);
-  const [beH, beM] = blockEnd.split(":").map(Number);
-  const bStart = bsH * 60 + bsM;
-  const bEnd = beH * 60 + beM;
+): DayCapacity {
+  const wsMin = toMin(workStart);
+  const weMin = toMin(workEnd);
+  const psMin = toMin(pauseStart);
+  const peMin = toMin(pauseEnd);
 
-  // Get overlapping events within this block
-  const overlaps = existingEvents
-    .map(e => ({ s: Math.max(toMin(e.start_time), bStart), e: Math.min(toMin(e.end_time), bEnd) }))
-    .filter(o => o.s < o.e)
-    .sort((a, b) => a.s - b.s);
+  // Work blocks: morning and afternoon
+  const workBlocks: FreeSlot[] = [];
+  if (wsMin < psMin) workBlocks.push({ startMin: wsMin, endMin: psMin });
+  if (peMin < weMin) workBlocks.push({ startMin: peMin, endMin: weMin });
 
-  const freeSlots: { start: string; end: string }[] = [];
-  let cursor = bStart;
-  for (const o of overlaps) {
-    if (cursor < o.s) {
-      freeSlots.push({
-        start: `${String(Math.floor(cursor / 60)).padStart(2, "0")}:${String(cursor % 60).padStart(2, "0")}`,
-        end: `${String(Math.floor(o.s / 60)).padStart(2, "0")}:${String(o.s % 60).padStart(2, "0")}`,
-      });
+  // Get events for this specific day as minute ranges
+  const dayEvents = existingEvents
+    .filter(e => e.start_time.startsWith(dateStr))
+    .map(e => {
+      const s = new Date(e.start_time);
+      const end = new Date(e.end_time);
+      return { startMin: s.getUTCHours() * 60 + s.getUTCMinutes(), endMin: end.getUTCHours() * 60 + end.getUTCMinutes() };
+    })
+    .sort((a, b) => a.startMin - b.startMin);
+
+  // Subtract events from work blocks to get free slots
+  const freeSlots: FreeSlot[] = [];
+  for (const block of workBlocks) {
+    let cursor = block.startMin;
+    for (const ev of dayEvents) {
+      if (ev.endMin <= block.startMin || ev.startMin >= block.endMin) continue;
+      const evStart = Math.max(ev.startMin, block.startMin);
+      const evEnd = Math.min(ev.endMin, block.endMin);
+      if (cursor < evStart) {
+        freeSlots.push({ startMin: cursor, endMin: evStart });
+      }
+      cursor = Math.max(cursor, evEnd);
     }
-    cursor = Math.max(cursor, o.e);
+    if (cursor < block.endMin) {
+      freeSlots.push({ startMin: cursor, endMin: block.endMin });
+    }
   }
-  if (cursor < bEnd) {
-    freeSlots.push({
-      start: `${String(Math.floor(cursor / 60)).padStart(2, "0")}:${String(cursor % 60).padStart(2, "0")}`,
-      end: `${String(Math.floor(bEnd / 60)).padStart(2, "0")}:${String(bEnd % 60).padStart(2, "0")}`,
-    });
+
+  const totalAvailable = freeSlots.reduce((sum, s) => sum + (s.endMin - s.startMin), 0);
+  const maxSchedulable = Math.floor(totalAvailable * 0.7);
+
+  return { date: dateStr, totalAvailable, maxSchedulable, usedMinutes: 0, freeSlots };
+}
+
+/** Try to place a task of given duration into day capacity. Returns placed slot or null. */
+function tryPlace(day: DayCapacity, durationMin: number, preferMorning: boolean, pauseStartMin: number): { startMin: number; endMin: number } | null {
+  if (day.usedMinutes + durationMin > day.maxSchedulable) return null;
+
+  // Sort slots: prefer morning or afternoon
+  const sortedSlots = [...day.freeSlots];
+  if (!preferMorning) {
+    sortedSlots.sort((a, b) => b.startMin - a.startMin); // afternoon first
   }
-  return freeSlots;
+
+  for (const slot of sortedSlots) {
+    const available = slot.endMin - slot.startMin;
+    if (available >= durationMin) {
+      // Snap to 15-min
+      const startMin = Math.ceil(slot.startMin / 15) * 15;
+      const endMin = startMin + durationMin;
+      if (endMin <= slot.endMin) {
+        // Consume from slot
+        const idx = day.freeSlots.indexOf(slot);
+        if (idx !== -1) {
+          day.freeSlots.splice(idx, 1);
+          if (endMin < slot.endMin) {
+            day.freeSlots.push({ startMin: endMin, endMin: slot.endMin });
+          }
+          if (slot.startMin < startMin) {
+            day.freeSlots.push({ startMin: slot.startMin, endMin: startMin });
+          }
+          day.freeSlots.sort((a, b) => a.startMin - b.startMin);
+        }
+        day.usedMinutes += durationMin;
+        return { startMin, endMin };
+      }
+    }
+  }
+  return null;
 }
 
 serve(async (req) => {
@@ -73,372 +191,265 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const structureFilter = body.structure_id || null;
+    const planningHorizonDays = body.horizon_days || 14; // 2 weeks default
 
-    // 0a. Get user work hours settings
-    const { data: workHoursRow } = await supabase
-      .from("work_hours_settings")
-      .select("*")
-      .limit(1)
-      .maybeSingle();
+    // ── 1. Work hours ──
+    const { data: workHoursRow } = await supabase.from("work_hours_settings").select("*").limit(1).maybeSingle();
     const workStart = workHoursRow?.work_start || "09:00";
     const workEnd = workHoursRow?.work_end || "18:00";
     const pauseStart = workHoursRow?.pause_start || "12:00";
     const pauseEnd = workHoursRow?.pause_end || "13:00";
+    const pauseStartMin = toMin(pauseStart);
 
-    // 0. Get today's morning audit for adaptive planning
-    const { data: auditData } = await supabase
-      .from("daily_audits")
-      .select("*")
-      .eq("audit_date", today)
-      .maybeSingle();
-
-    // Compute adaptation rules from audit
-    let adaptRules = {
-      maxDeepWorkMin: 120,
-      blockDurationMode: "normal" as "short" | "normal" | "long",
-      capacityMultiplier: 1.0,
-      priorityMode: "normal" as "impact" | "easy_first" | "normal" | "low_friction",
-      planningNote: "",
-    };
-
+    // ── 2. Morning audit for today ──
+    const { data: auditData } = await supabase.from("daily_audits").select("*").eq("audit_date", today).maybeSingle();
+    let capacityMultiplier = 1.0;
+    let auditNote = "";
     if (auditData) {
-      // Energy
-      if (auditData.energy_level >= 4) { adaptRules.maxDeepWorkMin = 240; adaptRules.planningNote += "Énergie haute → deep work prolongé. "; }
-      else if (auditData.energy_level <= 2) { adaptRules.maxDeepWorkMin = 60; adaptRules.planningNote += "Énergie basse → deep work limité à 1h. "; }
-
-      // Mental clarity
-      if (auditData.mental_clarity === "fog") { adaptRules.priorityMode = "easy_first"; adaptRules.planningNote += "Brume mentale → tâches simples d'abord. "; }
-      else if (auditData.mental_clarity === "clear") { adaptRules.priorityMode = "impact"; adaptRules.planningNote += "Clarté → tâches importantes le matin. "; }
-
-      // Mood
-      if (auditData.mood === "stressed" || auditData.mood === "anxious") { adaptRules.capacityMultiplier = 0.7; adaptRules.priorityMode = "easy_first"; adaptRules.planningNote += "Stress → planning allégé. "; }
-      else if (auditData.mood === "motivated") { adaptRules.priorityMode = "impact"; adaptRules.planningNote += "Motivé → impact max. "; }
-
-      // Distraction
-      if (auditData.distraction_level === "scattered" || auditData.distraction_level === "distracted") { adaptRules.blockDurationMode = "short"; adaptRules.planningNote += "Distrait → blocs Pomodoro courts. "; }
-      else if (auditData.distraction_level === "focus") { adaptRules.blockDurationMode = "long"; adaptRules.planningNote += "Concentré → blocs longs. "; }
-
-      // Objective
-      if (auditData.day_objective === "productivity") { adaptRules.priorityMode = "impact"; }
-      else if (auditData.day_objective === "recovery") { adaptRules.capacityMultiplier = 0.5; adaptRules.planningNote += "Récupération → 50% capacité. "; }
-      else if (auditData.day_objective === "slow") { adaptRules.priorityMode = "low_friction"; adaptRules.planningNote += "Tranquille → next actions simples. "; }
-
-      // Cognitive
-      if (auditData.cognitive_availability === "<2h") { adaptRules.maxDeepWorkMin = Math.min(adaptRules.maxDeepWorkMin, 60); adaptRules.capacityMultiplier = Math.min(adaptRules.capacityMultiplier, 0.5); adaptRules.planningNote += "Dispo <2h → 1 tâche max. "; }
-      else if (auditData.cognitive_availability === ">4h") { adaptRules.maxDeepWorkMin = Math.max(adaptRules.maxDeepWorkMin, 240); adaptRules.planningNote += "Dispo >4h → deep work renforcé. "; }
+      if (auditData.energy_level <= 2) { capacityMultiplier = 0.6; auditNote += "Énergie basse → capacité réduite. "; }
+      if (auditData.mood === "stressed" || auditData.mood === "anxious") { capacityMultiplier *= 0.7; auditNote += "Stress → planning allégé. "; }
+      if (auditData.day_objective === "recovery") { capacityMultiplier *= 0.5; auditNote += "Récupération. "; }
+      if (auditData.cognitive_availability === "<2h") { capacityMultiplier *= 0.5; auditNote += "Dispo <2h. "; }
     }
 
-    // 1. Get estimation coefficients (planning fallacy correction)
+    // ── 3. Estimation coefficients ──
     const { data: coefficients } = await supabase.from("estimation_coefficients").select("*");
     const coeffMap: Record<string, number> = {};
-    for (const c of coefficients || []) {
-      coeffMap[c.action_type] = c.coefficient;
-    }
+    for (const c of coefficients || []) coeffMap[c.action_type] = c.coefficient;
 
-    // 2. Get unplanned tasks sorted by computed_priority DESC
-    let taskQuery = supabase.from("tasks").select("*").is("due_date", null).neq("status", "done").order("computed_priority", { ascending: false }).limit(20);
+    // ── 4. Unplanned tasks (no due_date, not done) ──
+    let taskQuery = supabase.from("tasks").select("*").is("due_date", null).neq("status", "done").order("computed_priority", { ascending: false }).limit(50);
     if (structureFilter) taskQuery = taskQuery.eq("structure_id", structureFilter);
-    const { data: tasks } = await taskQuery;
+    const { data: rawTasks } = await taskQuery;
+    const tasks = rawTasks || [];
 
-    // 3. Get today's existing REAL events
-    const { data: events } = await supabase.from("calendar_events").select("*")
-      .gte("start_time", `${today}T00:00:00`).lte("start_time", `${today}T23:59:59`);
+    // ── 5. Get all events for the planning horizon ──
+    const horizonEnd = addDays(today, planningHorizonDays);
+    const { data: allEvents } = await supabase.from("calendar_events").select("*")
+      .gte("start_time", `${today}T00:00:00`).lte("start_time", `${horizonEnd}T23:59:59`);
 
-    // 4. Get routines — find the ACTIVE one with its blocks
-    const { data: routines } = await supabase.from("routines").select("*").eq("is_active", true).limit(10);
+    // ── 6. Compute per-day capacity ──
+    const dayCapacities: DayCapacity[] = [];
+    for (let i = 0; i < planningHorizonDays; i++) {
+      const dateStr = addDays(today, i);
+      if (isWeekend(dateStr)) continue; // skip weekends
+      const cap = computeDayCapacity(dateStr, workStart, workEnd, pauseStart, pauseEnd, allEvents || []);
+      // Apply audit multiplier only for today
+      if (i === 0 && capacityMultiplier < 1.0) {
+        cap.maxSchedulable = Math.floor(cap.maxSchedulable * capacityMultiplier);
+      }
+      dayCapacities.push(cap);
+    }
 
-    const routine = (structureFilter
-      ? routines?.find((r: any) => r.structure_id === structureFilter)
-      : null) || routines?.find((r: any) => !r.structure_id) || routines?.[0] || null;
+    // ── 7. Estimate durations & split big tasks using AI ──
+    // Prepare tasks with corrected durations
+    interface PreparedTask {
+      id: string;
+      label: string;
+      actionType: string;
+      priority: string;
+      importance: number;
+      urgency: number;
+      computedPriority: number | null;
+      durationMin: number;
+      structureId: string;
+      category: string;
+      isSubtask: boolean;
+      parentLabel?: string;
+      stepOrder?: number;
+      dueDate?: string | null;
+    }
 
-    // 5. Parse routine blocks — the core of Module 4
-    const blocks: RoutineBlock[] = (routine?.blocks as RoutineBlock[]) || [];
-    const emailSlots = (routine?.email_slots as string[]) || ["09:00", "13:00", "17:30"];
-    const routineName = routine?.name || "Aucune routine";
-    const routineType = routine?.routine_type || "custom";
+    const tasksToSchedule: PreparedTask[] = [];
 
-    // Compute free slots per block type (excluding breaks and existing events)
-    const workBlocks = blocks.filter(b => b.type !== "break");
-    const blockSlots = workBlocks.map(block => {
-      const freeSlots = subtractOccupied(block.start, block.end, today, events || []);
-      const freeMinutes = freeSlots.reduce((sum, s) => {
-        const [sh, sm] = s.start.split(":").map(Number);
-        const [eh, em] = s.end.split(":").map(Number);
-        return sum + (eh * 60 + em) - (sh * 60 + sm);
-      }, 0);
-      return {
-        type: block.type,
-        label: block.label,
-        start: block.start,
-        end: block.end,
-        totalMinutes: blockMinutes(block),
-        freeMinutes,
-        freeSlots,
-      };
-    });
-
-    const totalFreeMinutes = blockSlots.reduce((sum, b) => sum + b.freeMinutes, 0);
-
-    // 6. Apply planning fallacy correction
-    const correctedTasks = tasks?.map(t => {
+    for (const t of tasks) {
       const coeff = coeffMap[t.action_type] || 1.3;
-      const rawDuration = t.estimated_duration || 30;
+      const rawDuration = t.estimated_duration || DURATION_DEFAULTS[t.action_type] || 30;
       const correctedDuration = Math.ceil(rawDuration * coeff);
-      return {
-        id: t.id,
-        label: t.action_label,
-        type: t.action_type,
-        priority: t.priority,
-        importance: t.importance,
-        urgency: t.urgency,
-        computed_priority: t.computed_priority,
-        raw_duration: rawDuration,
-        corrected_duration: correctedDuration,
-        structure_id: t.structure_id,
-      };
-    }) || [];
+      const maxSession = MAX_SESSION[t.action_type] || 90;
 
-    // 7. Apply 65% capacity rule × audit adaptation multiplier
-    const baseCapacity = Math.floor(totalFreeMinutes * 0.65);
-    const maxCapacity = Math.floor(baseCapacity * adaptRules.capacityMultiplier);
+      if (correctedDuration > maxSession) {
+        // Split into multiple sessions
+        const sessionCount = Math.ceil(correctedDuration / maxSession);
+        const sessionDuration = Math.ceil(correctedDuration / sessionCount / 15) * 15; // round to 15
+        for (let s = 0; s < sessionCount; s++) {
+          const remaining = correctedDuration - s * sessionDuration;
+          const thisDuration = Math.min(sessionDuration, remaining);
+          tasksToSchedule.push({
+            id: t.id,
+            label: sessionCount > 1 ? `${t.action_label} (${s + 1}/${sessionCount})` : t.action_label,
+            actionType: t.action_type,
+            priority: t.priority,
+            importance: t.importance,
+            urgency: t.urgency,
+            computedPriority: t.computed_priority,
+            durationMin: Math.max(thisDuration, 15),
+            structureId: t.structure_id,
+            category: t.category || "admin",
+            isSubtask: sessionCount > 1,
+            parentLabel: sessionCount > 1 ? t.action_label : undefined,
+            stepOrder: s + 1,
+            dueDate: t.due_date,
+          });
+        }
+      } else {
+        tasksToSchedule.push({
+          id: t.id,
+          label: t.action_label,
+          actionType: t.action_type,
+          priority: t.priority,
+          importance: t.importance,
+          urgency: t.urgency,
+          computedPriority: t.computed_priority,
+          durationMin: Math.max(Math.ceil(correctedDuration / 15) * 15, 15),
+          structureId: t.structure_id,
+          category: t.category || "admin",
+          isSubtask: false,
+          dueDate: t.due_date,
+        });
+      }
+    }
 
-    // 8. Build the detailed prompt with block-aware placement rules + audit context
-    const blockRulesText = blockSlots.map(b =>
-      `- ${b.label} (${b.start}-${b.end}, type: ${b.type}) → ${b.freeMinutes} min libres. Créneaux: ${b.freeSlots.map(s => `${s.start}-${s.end}`).join(", ") || "AUCUN (entièrement occupé)"}`
-    ).join("\n");
-
-    const auditContext = auditData ? `
-AUDIT MATINAL DE L'UTILISATEUR :
-- Énergie physique: ${auditData.energy_level}/5
-- Clarté mentale: ${auditData.mental_clarity}
-- Humeur: ${auditData.mood}
-- Concentration: ${auditData.distraction_level}
-- Objectif: ${auditData.day_objective}
-- Dispo cognitive: ${auditData.cognitive_availability}
-
-ADAPTATIONS REQUISES :
-- Deep work max: ${adaptRules.maxDeepWorkMin} minutes
-- Mode blocs: ${adaptRules.blockDurationMode === "short" ? "COURTS (25 min Pomodoro)" : adaptRules.blockDurationMode === "long" ? "LONGS (60-90 min)" : "NORMAUX (45-60 min)"}
-- Priorité: ${adaptRules.priorityMode === "impact" ? "Impact MAX d'abord" : adaptRules.priorityMode === "easy_first" ? "Tâches SIMPLES d'abord (admin, quick)" : adaptRules.priorityMode === "low_friction" ? "Next actions simples, faible friction" : "Normal"}
-- Capacité ajustée: ${maxCapacity} min (${Math.round(adaptRules.capacityMultiplier * 100)}% de la normale)
-- Note: ${adaptRules.planningNote}` : "";
-
-    const taskTypeMapping = `
-RÈGLES DE CORRESPONDANCE TÂCHE → BLOC :
-- deep_work blocks → WRITE, BUILD, PLAN, REVIEW, LEARN + toute tâche avec importance ≥ 4
-- admin blocks → ADMIN, OTHER, tâches importance < 3
-- meetings blocks → CALL, MEETING
-- email blocks (créneaux: ${emailSlots.join(", ")}) → EMAIL (30 min chacun)
-- Si un bloc est plein, placer dans le PROCHAIN bloc compatible ou dans un bloc admin`;
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          {
-            role: "system",
-            content: `Tu es un planificateur IA scientifique. Tu places des TÂCHES dans le calendrier en respectant les blocs de la routine active de l'utilisateur.
-
-ROUTINE ACTIVE : "${routineName}" (type: ${routineType})
-
-BLOCS DE LA ROUTINE (avec disponibilité réelle après événements existants) :
-${blockRulesText}
-
-${taskTypeMapping}
-${auditContext}
-
-HORAIRES DE TRAVAIL STRICTS (NE JAMAIS placer en dehors) :
-- ${workStart}–${pauseStart} (matin)
-- ${pauseEnd}–${workEnd} (après-midi)
-- PAUSE : ${pauseStart}–${pauseEnd} (aucune tâche ne doit être dans cette plage)
-- Toute tâche DOIT commencer ET finir ENTIÈREMENT dans l'une de ces plages
-
-RÈGLES CRITIQUES :
-1. CAPACITÉ MAX: ${maxCapacity} minutes (65% de ${totalFreeMinutes} min libres)
-2. NE JAMAIS chevaucher un événement existant
-3. NE JAMAIS créer d'événements "Deep Work", "Emails" — place les VRAIES TÂCHES dans ces zones
-4. Les heures de début/fin doivent être DANS les créneaux libres et ALIGNÉES sur des intervalles de 15 minutes
-5. COMPACTAGE : colle les tâches les unes aux autres sans trous ! La tâche suivante commence dès que la précédente finit (avec 0 min de marge dans le même bloc)
-6. REMPLISSAGE CHRONOLOGIQUE : remplis les créneaux dans l'ordre chronologique, du plus tôt au plus tard
-7. GROUPAGE : tâches du même type consécutivement (réduit l'Attention Residue)
-8. Les tâches haute priorité d'abord dans les blocs deep_work
-9. Les routines sont des PRÉFÉRENCES de placement, pas des blocages. Si un bloc deep_work est plein, place la tâche dans le créneau libre le plus proche, même s'il est de type admin
-10. AUCUN trou entre deux tâches adjacentes dans le même bloc — elles doivent être collées bout à bout
-11. Les seuls espaces vides autorisés sont les pauses de routine (type "break")
-12. AUCUNE tâche avant 09:00 ou après 18:00
-13. AUCUNE tâche pendant la pause 12:00–13:00
-14. Si une tâche ne rentre pas entièrement dans un bloc libre, la reporter (skipped)
-
-Réponds via l'outil plan_tasks. Pour chaque tâche, indique dans quel bloc de routine elle a été placée.`
-          },
-          {
-            role: "user",
-            content: `Date: ${today}
-Capacité restante: ${maxCapacity} minutes
-
-Tâches à placer (triées par priorité): ${JSON.stringify(correctedTasks)}
-
-Événements RÉELS existants (à ne pas chevaucher): ${JSON.stringify(events?.map(e => ({ title: e.title, start: e.start_time, end: e.end_time })))}`
-          }
-        ],
-        tools: [{
-          type: "function",
-          function: {
-            name: "plan_tasks",
-            description: "Place tasks in specific time slots within routine blocks",
-            parameters: {
-              type: "object",
-              properties: {
-                planned: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      task_id: { type: "string" },
-                      start_time: { type: "string", description: "ISO datetime" },
-                      end_time: { type: "string", description: "ISO datetime" },
-                      block_type: { type: "string", enum: ["deep_work", "admin", "meetings", "email", "other"] },
-                      routine_block_label: { type: "string", description: "Label of the routine block where this task was placed" },
-                    },
-                    required: ["task_id", "start_time", "end_time", "block_type", "routine_block_label"],
-                    additionalProperties: false
-                  }
-                },
-                capacity_used: { type: "number" },
-                capacity_remaining: { type: "number" },
-                skipped_count: { type: "number" },
-                placement_summary: { type: "string", description: "Brief explanation of placement strategy" },
-              },
-              required: ["planned", "capacity_used", "capacity_remaining", "skipped_count", "placement_summary"],
-              additionalProperties: false
-            }
-          }
-        }],
-        tool_choice: { type: "function", function: { name: "plan_tasks" } },
-      }),
+    // ── 8. Sort tasks by scheduling priority ──
+    // Urgencies first → high priority → high importance → short tasks last (fill gaps)
+    tasksToSchedule.sort((a, b) => {
+      // Step order: keep steps of same task together
+      if (a.id === b.id && a.isSubtask && b.isSubtask) return (a.stepOrder || 0) - (b.stepOrder || 0);
+      // Priority: high > medium > low
+      const prioOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+      const pa = prioOrder[a.priority] ?? 1;
+      const pb = prioOrder[b.priority] ?? 1;
+      if (pa !== pb) return pa - pb;
+      // Importance desc
+      if (b.importance !== a.importance) return b.importance - a.importance;
+      // Urgency desc
+      return b.urgency - a.urgency;
     });
 
-    if (!response.ok) {
-      const t = await response.text();
-      console.error("AI error:", response.status, t);
-      return new Response(JSON.stringify({ error: "Autoplan failed" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // ── 9. Place tasks across days ──
+    const placements: {
+      taskId: string;
+      label: string;
+      date: string;
+      startTime: string;
+      endTime: string;
+      durationMin: number;
+      category: string;
+      structureId: string;
+    }[] = [];
+
+    const atRiskTasks: { label: string; reason: string }[] = [];
+    const skippedTasks: { label: string; reason: string }[] = [];
+    const placedTaskIds = new Set<string>();
+
+    // Group steps of same task so they go on consecutive days
+    let prevTaskId = "";
+    let dayIndexForSteps = 0;
+
+    for (const task of tasksToSchedule) {
+      const preferMorning = PREFERRED_TIME[task.actionType] === "morning" || task.importance >= 4;
+      let placed = false;
+
+      // For multi-step tasks, try to spread across different days
+      const startDayIdx = (task.isSubtask && task.id === prevTaskId) ? Math.min(dayIndexForSteps + 1, dayCapacities.length - 1) : 0;
+
+      for (let di = startDayIdx; di < dayCapacities.length; di++) {
+        const day = dayCapacities[di];
+        const slot = tryPlace(day, task.durationMin, preferMorning, pauseStartMin);
+        if (slot) {
+          const startIso = `${day.date}T${minToStr(slot.startMin)}:00Z`;
+          const endIso = `${day.date}T${minToStr(slot.endMin)}:00Z`;
+
+          placements.push({
+            taskId: task.id,
+            label: task.label,
+            date: day.date,
+            startTime: startIso,
+            endTime: endIso,
+            durationMin: task.durationMin,
+            category: task.category,
+            structureId: task.structureId,
+          });
+          placedTaskIds.add(task.id);
+          placed = true;
+          prevTaskId = task.id;
+          dayIndexForSteps = di;
+          break;
+        }
+      }
+
+      if (!placed) {
+        if (task.priority === "high") {
+          atRiskTasks.push({ label: task.label, reason: "Pas assez de capacité dans les 2 prochaines semaines" });
+        } else {
+          skippedTasks.push({ label: task.label, reason: "Capacité insuffisante, reportée" });
+        }
+      }
     }
 
-    const data = await response.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall) {
-      return new Response(JSON.stringify({ error: "No plan generated" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const result = JSON.parse(toolCall.function.arguments);
-    const { planned, capacity_used, capacity_remaining, skipped_count, placement_summary } = result;
+    // ── 10. Write to database ──
     let actuallyPlanned = 0;
+    const plannedDates = new Set<string>();
 
-    // Work hours config from DB settings
-    const parseT = (t: string) => { const [h, m] = t.split(":").map(Number); return { h, m }; };
-    const ws = parseT(workStart), we = parseT(workEnd), ps = parseT(pauseStart), pe = parseT(pauseEnd);
-    const WORK_BLOCKS_CONFIG = [
-      { startHour: ws.h, startMin: ws.m, endHour: ps.h, endMin: ps.m },
-      { startHour: pe.h, startMin: pe.m, endHour: we.h, endMin: we.m },
-    ];
-
-    function isWithinWorkHoursServer(startIso: string, endIso: string): boolean {
-      const s = new Date(startIso);
-      const e = new Date(endIso);
-      const sMin = s.getHours() * 60 + s.getMinutes();
-      const eMin = e.getHours() * 60 + e.getMinutes();
-      return WORK_BLOCKS_CONFIG.some(b => {
-        const bStart = b.startHour * 60 + b.startMin;
-        const bEnd = b.endHour * 60 + b.endMin;
-        return sMin >= bStart && eMin <= bEnd;
-      });
-    }
-
-    function hasCollisionServer(startIso: string, endIso: string, allEvents: { start_time: string; end_time: string }[]): boolean {
-      const sMin = (() => { const d = new Date(startIso); return d.getHours() * 60 + d.getMinutes(); })();
-      const eMin = (() => { const d = new Date(endIso); return d.getHours() * 60 + d.getMinutes(); })();
-      return allEvents.some(ev => {
-        const evS = (() => { const d = new Date(ev.start_time); return d.getHours() * 60 + d.getMinutes(); })();
-        const evE = (() => { const d = new Date(ev.end_time); return d.getHours() * 60 + d.getMinutes(); })();
-        return sMin < evE && eMin > evS;
-      });
-    }
-
-    // Track all events (existing + newly created) for collision detection
-    const allPlacedEvents: { start_time: string; end_time: string }[] = [...(events || [])];
-
-    // Create calendar events for placed tasks — with server-side validation
-    for (const item of planned) {
-      const task = tasks?.find(t => t.id === item.task_id);
-      if (!task) continue;
-
-      // Validate work hours
-      if (!isWithinWorkHoursServer(item.start_time, item.end_time)) {
-        console.warn(`Skipping task "${task.action_label}": outside work hours`);
-        continue;
-      }
-
-      // Validate no collision
-      if (hasCollisionServer(item.start_time, item.end_time, allPlacedEvents)) {
-        console.warn(`Skipping task "${task.action_label}": collision detected`);
-        continue;
-      }
-
-      const colorMap: Record<string, string> = {
-        deep_work: "#6366F1",
-        admin: "#8B5CF6",
-        meetings: "#A78BFA",
-        email: "#3B82F6",
-        other: "#64748B",
-      };
-
-      const categoryMap: Record<string, string> = {
-        WRITE: "focus", BUILD: "focus", LEARN: "focus",
-        MEETING: "meetings",
-        ADMIN: "admin", PLAN: "admin", REVIEW: "admin",
-        EMAIL: "communication", CALL: "communication",
-      };
-      const category = task.category || categoryMap[task.action_type] || "admin";
-
-      await supabase.from("calendar_events").insert({
-        title: task.action_label,
-        start_time: item.start_time,
-        end_time: item.end_time,
-        structure_id: task.structure_id,
+    for (const p of placements) {
+      const { error } = await supabase.from("calendar_events").insert({
+        title: p.label,
+        start_time: p.startTime,
+        end_time: p.endTime,
+        structure_id: p.structureId,
         source: "ai",
-        color: colorMap[item.block_type] || "#A78BFA",
-        category,
+        category: p.category,
+        color: null,
       });
 
-      // Track this newly placed event for future collision checks
-      allPlacedEvents.push({ start_time: item.start_time, end_time: item.end_time });
+      if (error) {
+        console.error("Insert error:", error);
+        continue;
+      }
 
-      await supabase.from("tasks").update({ due_date: today }).eq("id", task.id);
+      // Update task due_date to the first day it's scheduled
+      await supabase.from("tasks").update({ due_date: p.date }).eq("id", p.taskId);
+
       actuallyPlanned++;
+      plannedDates.add(p.date);
     }
+
+    // ── 11. Build summary ──
+    const daysSummary = dayCapacities.slice(0, 10).map(d => {
+      const dayPlacements = placements.filter(p => p.date === d.date);
+      const totalPlanned = dayPlacements.reduce((s, p) => s + p.durationMin, 0);
+      return `${dayLabel(d.date)}: ${totalPlanned}/${d.maxSchedulable} min (${dayPlacements.length} tâches)`;
+    }).join("\n");
+
+    const overloadWarning = atRiskTasks.length > 0
+      ? `⚠️ ${atRiskTasks.length} tâche(s) prioritaire(s) n'ont pas pu être placées par manque de capacité.`
+      : null;
+
+    const placementSummary = [
+      `Planning réparti sur ${plannedDates.size} jour(s).`,
+      daysSummary,
+      overloadWarning,
+      skippedTasks.length > 0 ? `${skippedTasks.length} tâche(s) reportée(s) (capacité insuffisante).` : null,
+    ].filter(Boolean).join("\n");
 
     return new Response(JSON.stringify({
       planned: actuallyPlanned,
-      items: planned,
-      capacity_used,
-      capacity_remaining,
-      skipped_count: skipped_count + (planned.length - actuallyPlanned),
-      max_capacity: maxCapacity,
-      routine_used: routineName,
-      routine_type: routineType,
-      placement_summary,
-      blocks_info: blockSlots.map(b => ({ label: b.label, type: b.type, freeMinutes: b.freeMinutes })),
+      planned_dates: Array.from(plannedDates).sort(),
+      skipped_count: skippedTasks.length,
+      at_risk: atRiskTasks,
+      skipped: skippedTasks,
+      placement_summary: placementSummary,
+      overload_warning: overloadWarning,
+      days_breakdown: dayCapacities.slice(0, 10).map(d => ({
+        date: d.date,
+        label: dayLabel(d.date),
+        available: d.totalAvailable,
+        max: d.maxSchedulable,
+        used: d.usedMinutes,
+        tasks: placements.filter(p => p.date === d.date).map(p => ({ label: p.label, duration: p.durationMin })),
+      })),
       audit_applied: !!auditData,
-      audit_note: adaptRules.planningNote || null,
+      audit_note: auditNote || null,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
