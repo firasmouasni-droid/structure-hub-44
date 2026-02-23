@@ -10,6 +10,8 @@ import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/comp
 import { motion } from "framer-motion";
 import FocusMode from "@/components/focus/FocusMode";
 import { NextActionDialog, WIPWarningDialog } from "@/components/focus/ProductivityDialogs";
+import CategorySelector from "@/components/planning/CategorySelector";
+import { CATEGORIES, type TaskCategory } from "@/lib/categories";
 import type { Task } from "@/hooks/useTasks";
 
 const TABS = [
@@ -99,6 +101,16 @@ const GlobalTasks = () => {
       updateTask.mutateAsync({ id: task.id, status: "in_progress" });
     }
     setFocusTask(task);
+  };
+
+  const handleCategoryChange = async (taskId: string, category: TaskCategory) => {
+    try {
+      await supabase.from("tasks").update({ category }).eq("id", taskId);
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      toast.success(`Catégorie mise à jour : ${CATEGORIES[category].label}`);
+    } catch {
+      toast.error("Erreur lors du changement de catégorie");
+    }
   };
 
   const inProgressTasks = tasks.filter(t => t.status === "in_progress");
@@ -226,7 +238,11 @@ const GlobalTasks = () => {
                       </div>
                     )}
 
-                    <span className="pill text-[10px] font-semibold px-2.5 py-1 bg-muted text-muted-foreground hidden sm:inline">{task.action_type}</span>
+                    <CategorySelector
+                      value={((task as any).category as TaskCategory) || "admin"}
+                      onChange={(cat) => handleCategoryChange(task.id, cat)}
+                      compact
+                    />
                     <span className={`pill text-[10px] font-bold px-2.5 py-1 ${task.priority === "high" ? "bg-destructive/20 text-destructive-foreground" : task.priority === "medium" ? "bg-warning/20 text-warning-foreground" : "bg-muted text-muted-foreground"}`}>{task.priority}</span>
                   </div>
 
