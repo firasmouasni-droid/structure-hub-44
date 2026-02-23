@@ -93,14 +93,88 @@ const Home = () => {
         <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
           {/* ── Header utilisateur ── */}
           <motion.div
-            className="relative overflow-hidden rounded-3xl gradient-header p-8"
+            className="relative overflow-hidden rounded-3xl gradient-header p-6 sm:p-8"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="space-y-0">
-              {/* Top row: Actions aligned right */}
-              <div className="flex items-center justify-end gap-2 mb-4">
+            {/* Avatar + Greeting */}
+            <div className="flex items-center gap-4">
+              <div className="relative shrink-0">
+                <motion.button
+                  onClick={() => setAvatarMenuOpen(prev => !prev)}
+                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-3xl overflow-hidden shadow-soft cursor-pointer border-2 border-primary/20 hover:border-primary/50 transition-colors"
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full gradient-primary flex items-center justify-center">
+                      <User className="w-7 h-7 text-primary-foreground" />
+                    </div>
+                  )}
+                </motion.button>
+
+                <AnimatePresence>
+                  {avatarMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setAvatarMenuOpen(false)} />
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9, y: -5 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, y: -5 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute top-full left-0 mt-2 z-50 w-48 bg-card border border-border rounded-2xl shadow-lg overflow-hidden"
+                      >
+                        <button
+                          onClick={() => { setAvatarMenuOpen(false); navigate("/profile"); }}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted/60 transition-colors"
+                        >
+                          <User className="w-4 h-4" /> Profil
+                        </button>
+                        <button
+                          onClick={() => { setAvatarMenuOpen(false); navigate("/settings"); }}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted/60 transition-colors"
+                        >
+                          <Settings className="w-4 h-4" /> Paramètres
+                        </button>
+                        <div className="h-px bg-border" />
+                        <button
+                          onClick={() => { setAvatarMenuOpen(false); signOut(); }}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" /> Déconnexion
+                        </button>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
+                  Hello, {profile?.display_name || "toi"} 👋
+                </h1>
+                <p className="text-sm text-muted-foreground mt-1 capitalize">
+                  {format(new Date(), "EEEE d MMMM yyyy", { locale: fr })}
+                </p>
+              </div>
+            </div>
+
+            {/* Actions row below */}
+            <div className="flex items-center justify-between mt-4">
+              <p className="text-xs sm:text-sm text-muted-foreground italic">
+                {(() => {
+                  const hour = new Date().getHours();
+                  if (hour < 12) return "☀️ Prêt à conquérir cette matinée ?";
+                  if (hour < 17) return "🚀 L'après-midi est à toi, fonce !";
+                  return "✨ Belle soirée pour faire le point";
+                })()}
+              </p>
+              <div className="flex items-center gap-2 shrink-0">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -108,7 +182,7 @@ const Home = () => {
                   className="pill px-3 py-2 bg-card/70 backdrop-blur-sm shadow-soft flex items-center gap-2 cursor-pointer hover:bg-primary/10 transition-all"
                 >
                   <Sun className="w-4 h-4 text-warning" />
-                  <span className="text-xs font-bold text-foreground">Check-in</span>
+                  <span className="text-xs font-bold text-foreground hidden sm:inline">Check-in</span>
                 </motion.button>
                 <ThemeToggle />
                 <motion.button
@@ -120,80 +194,6 @@ const Home = () => {
                 >
                   <LogOut className="w-4 h-4 text-muted-foreground" />
                 </motion.button>
-              </div>
-
-              {/* Main: Avatar + Text */}
-              <div className="flex items-start gap-4">
-                <div className="relative shrink-0">
-                  <motion.button
-                    onClick={() => setAvatarMenuOpen(prev => !prev)}
-                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-3xl overflow-hidden shadow-soft cursor-pointer border-2 border-primary/20 hover:border-primary/50 transition-colors"
-                    initial={{ scale: 0, rotate: -180 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    {profile?.avatar_url ? (
-                      <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full gradient-primary flex items-center justify-center">
-                        <User className="w-7 h-7 text-primary-foreground" />
-                      </div>
-                    )}
-                  </motion.button>
-
-                  <AnimatePresence>
-                    {avatarMenuOpen && (
-                      <>
-                        <div className="fixed inset-0 z-40" onClick={() => setAvatarMenuOpen(false)} />
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.9, y: -5 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.9, y: -5 }}
-                          transition={{ duration: 0.15 }}
-                          className="absolute top-full left-0 mt-2 z-50 w-48 bg-card border border-border rounded-2xl shadow-lg overflow-hidden"
-                        >
-                          <button
-                            onClick={() => { setAvatarMenuOpen(false); navigate("/profile"); }}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted/60 transition-colors"
-                          >
-                            <User className="w-4 h-4" /> Profil
-                          </button>
-                          <button
-                            onClick={() => { setAvatarMenuOpen(false); navigate("/settings"); }}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted/60 transition-colors"
-                          >
-                            <Settings className="w-4 h-4" /> Paramètres
-                          </button>
-                          <div className="h-px bg-border" />
-                          <button
-                            onClick={() => { setAvatarMenuOpen(false); signOut(); }}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-                          >
-                            <LogOut className="w-4 h-4" /> Déconnexion
-                          </button>
-                        </motion.div>
-                      </>
-                    )}
-                  </AnimatePresence>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
-                    Hello, {profile?.display_name || "toi"} 👋
-                  </h1>
-                  <p className="text-sm text-muted-foreground mt-1 capitalize">
-                    {format(new Date(), "EEEE d MMMM yyyy", { locale: fr })}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2 italic">
-                    {(() => {
-                      const hour = new Date().getHours();
-                      if (hour < 12) return "☀️ Prêt à conquérir cette matinée ?";
-                      if (hour < 17) return "🚀 L'après-midi est à toi, fonce !";
-                      return "✨ Belle soirée pour faire le point";
-                    })()}
-                  </p>
-                </div>
               </div>
             </div>
           </motion.div>
