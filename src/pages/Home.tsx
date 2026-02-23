@@ -1,7 +1,7 @@
 import { useStructures, useCreateStructure } from "@/hooks/useStructures";
 import { useLifeSpaces } from "@/hooks/useLifeSpaces";
-import { Plus, Brain, ArrowRight, CheckSquare, Calendar, Bot, Lock, Sun, CalendarDays, AlertTriangle, Circle, CheckCircle2, LogOut } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Plus, Brain, ArrowRight, CheckSquare, Calendar, Bot, Lock, Sun, CalendarDays, AlertTriangle, Circle, CheckCircle2, LogOut, User } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -26,6 +26,7 @@ const COLORS = [
 
 const Home = () => {
   const { profile, signOut } = useAuth();
+  const navigate = useNavigate();
   const { data: structures = [], isLoading: structuresLoading } = useStructures();
   const { data: lifeSpaces = [], isLoading: spacesLoading } = useLifeSpaces();
   const { data: allTasks = [] } = useTasks({ isInbox: false });
@@ -98,14 +99,23 @@ const Home = () => {
           >
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                <motion.div
-                  className="w-12 h-12 sm:w-16 sm:h-16 rounded-3xl gradient-primary shadow-soft flex items-center justify-center shrink-0"
+                <motion.button
+                  onClick={() => navigate("/profile")}
+                  className="w-12 h-12 sm:w-16 sm:h-16 rounded-3xl overflow-hidden shadow-soft shrink-0 cursor-pointer border-2 border-primary/20 hover:border-primary/50 transition-colors"
                   initial={{ scale: 0, rotate: -180 }}
                   animate={{ scale: 1, rotate: 0 }}
                   transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  <Brain className="w-6 h-6 sm:w-8 sm:h-8 text-primary-foreground" />
-                </motion.div>
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full gradient-primary flex items-center justify-center">
+                      <User className="w-6 h-6 sm:w-8 sm:h-8 text-primary-foreground" />
+                    </div>
+                  )}
+                </motion.button>
                 <div className="min-w-0">
                   <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">
                     Hello, {profile?.display_name || "toi"} 👋
