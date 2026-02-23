@@ -1,7 +1,7 @@
 import { Link, useLocation, useParams } from "react-router-dom";
 import {
   LayoutDashboard, Inbox, CheckSquare, Calendar, Bot, Settings, Target, Clock,
-  ChevronDown, ChevronRight, BarChart3, Trophy, Lock, Brain, Home, Plus,
+  ChevronDown, ChevronRight, BarChart3, Trophy, Lock, Brain, Home, Plus, Compass,
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { useStructures } from "@/hooks/useStructures";
@@ -95,6 +95,21 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
         >
           <Home className="w-[18px] h-[18px]" />
           <span>Accueil</span>
+        </Link>
+
+        {/* QG Général link */}
+        <Link
+          to="/life-hq"
+          onClick={onNavigate}
+          className={cn(
+            "flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm font-medium transition-all duration-200",
+            location.pathname === "/life-hq"
+              ? "gradient-primary text-primary-foreground shadow-soft"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          )}
+        >
+          <Compass className="w-[18px] h-[18px]" />
+          <span>QG Général</span>
         </Link>
 
         {/* ── ESPACES DE VIE ── */}
