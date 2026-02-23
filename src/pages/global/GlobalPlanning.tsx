@@ -313,7 +313,7 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize,
               key={event.id}
               className="absolute z-10"
               style={{ left: "68px", right: "8px", top: `${topPx}px`, height: `${heightPx}px` }}
-              onClick={() => setDeleteConfirm(event.id)}
+              onClick={(e) => { e.stopPropagation(); setDeleteConfirm(prev => prev === event.id ? null : event.id); }}
             >
               <PlanningBlock
                 eventId={event.id}
@@ -328,34 +328,6 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize,
                 onDragStart={(e) => handleEventDragStart(e, event)}
                 onDragEnd={() => { setDragGhostMin(null); setDragType(null); }}
               />
-              {/* Delete confirmation popover */}
-              {deleteConfirm === event.id && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9, y: -4 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  className="absolute top-full left-2 right-2 mt-1 z-50 bg-card border border-border/50 rounded-2xl shadow-lg p-3"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <p className="text-xs font-semibold text-foreground mb-2 truncate">{event.title}</p>
-                  <p className="text-[11px] text-muted-foreground mb-3">Supprimer cet événement ?</p>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => { onEventDelete?.(event.id); setDeleteConfirm(null); }}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-destructive/10 text-destructive text-xs font-bold hover:bg-destructive/20 transition-colors"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      Supprimer
-                    </button>
-                    <button
-                      onClick={() => setDeleteConfirm(null)}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-muted text-muted-foreground text-xs font-bold hover:bg-muted/80 transition-colors"
-                    >
-                      <X className="w-3 h-3" />
-                      Annuler
-                    </button>
-                  </div>
-                </motion.div>
-              )}
               {/* Resize handle at bottom */}
               <div
                 className="absolute bottom-0 left-2 right-2 h-3 cursor-s-resize z-20 group/resize flex items-center justify-center"
@@ -384,6 +356,40 @@ function DayView({ events, routineZones, onEventMove, onTaskDrop, onEventResize,
           </div>
         )}
       </div>
+
+      {/* Delete confirmation overlay */}
+      {deleteConfirm && (() => {
+        const ev = gridEvents.find(e => e.id === deleteConfirm);
+        if (!ev) return null;
+        return (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => setDeleteConfirm(null)}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-card border border-border/50 rounded-2xl shadow-xl p-5 max-w-sm w-full mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="text-sm font-bold text-foreground mb-1">{ev.title}</p>
+              <p className="text-xs text-muted-foreground mb-4">Supprimer cet événement du planning ?</p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => { onEventDelete?.(ev.id); setDeleteConfirm(null); }}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-destructive text-destructive-foreground text-sm font-bold hover:bg-destructive/90 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Supprimer
+                </button>
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-muted text-muted-foreground text-sm font-bold hover:bg-muted/80 transition-colors"
+                >
+                  Annuler
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
