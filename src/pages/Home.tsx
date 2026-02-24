@@ -204,7 +204,8 @@ const Home = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => setAuditOpen(true)}
-              className="rounded-full px-5 py-2.5 bg-charcoal text-white text-sm font-semibold flex items-center gap-2"
+              className="rounded-full px-5 py-2.5 text-white text-sm font-semibold flex items-center gap-2 shadow-md"
+              style={{ background: "linear-gradient(135deg, hsl(var(--opal-purple)), hsl(var(--opal-pink)))" }}
             >
               <Sun className="w-4 h-4" />
               Check-in du matin
