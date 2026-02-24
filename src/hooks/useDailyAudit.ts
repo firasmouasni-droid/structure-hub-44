@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface DailyAudit {
   id: string;
@@ -24,44 +25,54 @@ export interface AuditSettings {
 }
 
 export function useTodayAudit() {
+  const { user } = useAuth();
   const today = new Date().toISOString().split("T")[0];
   return useQuery({
-    queryKey: ["daily_audit", today],
+    queryKey: ["daily_audit", today, user?.id],
     queryFn: async () => {
+      if (!user) return null;
       const { data, error } = await supabase
         .from("daily_audits")
         .select("*")
         .eq("audit_date", today)
+        .eq("user_id", user.id)
         .maybeSingle();
       if (error) throw error;
       return data as DailyAudit | null;
     },
+    enabled: !!user,
   });
 }
 
 export function useAuditHistory(limit = 14) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ["daily_audits_history", limit],
+    queryKey: ["daily_audits_history", limit, user?.id],
     queryFn: async () => {
+      if (!user) return [];
       const { data, error } = await supabase
         .from("daily_audits")
         .select("*")
+        .eq("user_id", user.id)
         .order("audit_date", { ascending: false })
         .limit(limit);
       if (error) throw error;
       return data as DailyAudit[];
     },
+    enabled: !!user,
   });
 }
 
 export function useSubmitAudit() {
   const qc = useQueryClient();
+  const { user } = useAuth();
   return useMutation({
     mutationFn: async (audit: Omit<DailyAudit, "id" | "user_id" | "created_at" | "updated_at">) => {
-      // Upsert based on audit_date
+      if (!user) throw new Error("Not authenticated");
+      const payload = { ...audit, user_id: user.id };
       const { data, error } = await supabase
         .from("daily_audits")
-        .upsert(audit, { onConflict: "user_id,audit_date" })
+        .upsert(payload, { onConflict: "user_id,audit_date" })
         .select()
         .single();
       if (error) throw error;
