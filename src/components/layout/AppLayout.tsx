@@ -25,7 +25,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         {mobileOpen && (
           <>
             <motion.div
-              className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 lg:hidden"
+              className="fixed inset-0 bg-foreground/10 backdrop-blur-sm z-40 lg:hidden"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -46,16 +46,16 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
       <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background">
         {/* Mobile top bar */}
-        <div className="sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-card/80 backdrop-blur-sm border-b border-border/50 lg:hidden transition-colors duration-300">
+        <div className="sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-card/90 backdrop-blur-2xl border-b border-border/30 lg:hidden transition-colors duration-300">
           <button
             onClick={() => setMobileOpen(true)}
-            className="p-2 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
+            className="p-2 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
           >
             <Menu className="w-5 h-5 text-foreground" />
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-xl gradient-primary flex items-center justify-center">
-              <span className="text-primary-foreground text-[10px] font-bold">SC</span>
+            <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-opal-pink via-opal-purple to-accent flex items-center justify-center">
+              <span className="text-white text-[10px] font-bold">SC</span>
             </div>
             <span className="text-sm font-bold text-foreground">Second Cerveau</span>
           </div>
