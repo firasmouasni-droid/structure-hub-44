@@ -17,7 +17,12 @@ export const BottomNav = () => {
   const inboxCount = inboxTasks.length;
 
   const isItemActive = (item: typeof navItems[0]) => {
+    // If another nav item has an exact path match, it takes priority over prefix matches
     if (item.matchPrefix) {
+      const anotherExactMatch = navItems.some(
+        (n) => n !== item && location.pathname === n.path
+      );
+      if (anotherExactMatch) return false;
       return item.matchPrefix.some((p) => location.pathname.startsWith(p));
     }
     return location.pathname === item.path;
