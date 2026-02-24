@@ -43,7 +43,7 @@ export const StaggerContainer = ({
   </motion.div>
 );
 
-// Stagger child item
+// Stagger child item with scale-up
 export const StaggerItem = ({
   children,
   className,
@@ -54,11 +54,12 @@ export const StaggerItem = ({
   <motion.div
     className={className}
     variants={{
-      hidden: { opacity: 0, y: 16 },
+      hidden: { opacity: 0, y: 20, scale: 0.95 },
       visible: {
         opacity: 1,
         y: 0,
-        transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] },
+        scale: 1,
+        transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] },
       },
     }}
   >
@@ -99,7 +100,7 @@ export const TapScale = ({
   </motion.div>
 );
 
-// Fade-in section (for scroll-triggered or delayed sections)
+// Fade-in section with scale (for scroll-triggered or delayed sections)
 export const FadeInSection = ({
   children,
   className,
@@ -111,8 +112,8 @@ export const FadeInSection = ({
 }) => (
   <motion.section
     className={className}
-    initial={{ opacity: 0, y: 20 }}
-    whileInView={{ opacity: 1, y: 0 }}
+    initial={{ opacity: 0, y: 24, scale: 0.97 }}
+    whileInView={{ opacity: 1, y: 0, scale: 1 }}
     viewport={{ once: true, margin: "-50px" }}
     transition={{ duration: 0.5, delay, ease: [0.25, 0.46, 0.45, 0.94] }}
   >
