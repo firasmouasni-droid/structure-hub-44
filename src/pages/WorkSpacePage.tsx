@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { useMemo, forwardRef } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useStructures } from "@/hooks/useStructures";
 import { useLifeSpaces } from "@/hooks/useLifeSpaces";
 import { useTasks } from "@/hooks/useTasks";
@@ -16,44 +16,38 @@ import { format, isToday } from "date-fns";
 import { fr } from "date-fns/locale";
 
 /* ------------------------------------------------------------------ */
-/*  Mini‑metric pill                                                   */
+/*  Mini‑metric pill (forwardRef to avoid warnings)                    */
 /* ------------------------------------------------------------------ */
-function MiniMetric({ icon: Icon, label, value, gradient }: {
+const MiniMetric = forwardRef<HTMLDivElement, {
   icon: React.ElementType; label: string; value: string; gradient: string;
-}) {
-  return (
-    <motion.div
-      className="flex items-center gap-3 rounded-[20px] px-5 py-3 bg-card border border-border/30"
-      style={{ boxShadow: "0 4px 24px -4px hsla(0,0%,0%,0.06)" }}
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45 }}
+}>(({ icon: Icon, label, value, gradient }, ref) => (
+  <div
+    ref={ref}
+    className="flex items-center gap-3 rounded-[20px] px-4 py-3 bg-card border border-border/30"
+    style={{ boxShadow: "0 4px 20px -4px hsla(0,0%,0%,0.06)" }}
+  >
+    <div
+      className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+      style={{ background: gradient }}
     >
-      <div
-        className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-        style={{ background: gradient }}
-      >
-        <Icon className="w-4 h-4 text-white" />
-      </div>
-      <div className="min-w-0">
-        <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{label}</p>
-        <p className="text-sm font-bold text-foreground truncate">{value}</p>
-      </div>
-    </motion.div>
-  );
-}
+      <Icon className="w-4 h-4 text-white" />
+    </div>
+    <div className="min-w-0 flex-1">
+      <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium leading-tight">{label}</p>
+      <p className="text-sm font-bold text-foreground truncate">{value}</p>
+    </div>
+  </div>
+));
+MiniMetric.displayName = "MiniMetric";
 
 /* ------------------------------------------------------------------ */
 /*  Task mini‑card                                                     */
 /* ------------------------------------------------------------------ */
 function TaskMiniCard({ task, structure }: { task: any; structure?: any }) {
   return (
-    <motion.div
+    <div
       className="flex items-center gap-3 rounded-[18px] px-4 py-3.5 bg-card border border-border/30"
       style={{ boxShadow: "0 2px 16px -2px hsla(0,0%,0%,0.05)" }}
-      initial={{ opacity: 0, x: -8 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.4 }}
     >
       <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${
         task.priority === "high" ? "bg-opal-pink" :
@@ -71,7 +65,7 @@ function TaskMiniCard({ task, structure }: { task: any; structure?: any }) {
           {task.estimated_duration} min
         </span>
       )}
-    </motion.div>
+    </div>
   );
 }
 
@@ -79,6 +73,7 @@ function TaskMiniCard({ task, structure }: { task: any; structure?: any }) {
 /*  Main page                                                          */
 /* ------------------------------------------------------------------ */
 const WorkSpacePage = () => {
+  const navigate = useNavigate();
   const { data: structures = [] } = useStructures();
   const { data: lifeSpaces = [] } = useLifeSpaces();
   const { data: allTasks = [] } = useTasks();
@@ -108,25 +103,19 @@ const WorkSpacePage = () => {
     return todayOrActive.slice(0, 3);
   }, [workTasks]);
 
-  // Pending work tasks count (charge)
   const pendingCount = workTasks.filter((t) => t.status !== "done").length;
 
-  // Next event
   const workEvents = useMemo(
     () => todayEvents.filter((e) => !e.structure_id || workStructureIds.has(e.structure_id)),
     [todayEvents, workStructureIds]
   );
   const nextEvent = workEvents.length > 0 ? workEvents[0] : null;
 
-  // Energy from audit
   const energyLevel = audit?.energy_level ?? null;
-
-  // Gamification
   const level = stats?.level ?? 1;
   const xp = stats?.xp ?? 0;
   const streak = stats?.streak_days ?? 0;
 
-  // IA insight (simple heuristic)
   const insight = useMemo(() => {
     if (pendingCount === 0) return "Tu es à jour, beau travail 🌟";
     const stuckTasks = workTasks.filter((t) => t.status === "todo" && t.priority === "high");
@@ -135,12 +124,11 @@ const WorkSpacePage = () => {
     return "Belle journée pour avancer 🌱";
   }, [pendingCount, workTasks, priorityTasks]);
 
-  // Top recommendation
   const topTask = priorityTasks[0];
 
   return (
     <PageTransition>
-      <div className="max-w-2xl mx-auto px-5 py-8 space-y-8">
+      <div className="max-w-2xl mx-auto px-4 sm:px-5 py-6 sm:py-8 space-y-6 sm:space-y-8 overflow-x-hidden">
 
         {/* ── 1. HEADER ── */}
         <motion.div
@@ -148,37 +136,49 @@ const WorkSpacePage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h1 className="text-3xl font-extrabold text-foreground tracking-tight">Travail</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">Travail</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Ton état aujourd'hui · {format(new Date(), "EEEE d MMMM", { locale: fr })}
           </p>
         </motion.div>
 
-        {/* Mini‑metrics row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <MiniMetric
-            icon={Battery}
-            label="Charge"
-            value={`${pendingCount} tâche${pendingCount !== 1 ? "s" : ""}`}
-            gradient="linear-gradient(135deg, hsl(var(--opal-pink)), hsl(var(--opal-orange)))"
-          />
-          <MiniMetric
-            icon={Brain}
-            label="Énergie"
-            value={energyLevel ? `${energyLevel}/10` : "—"}
-            gradient="linear-gradient(135deg, hsl(var(--opal-purple)), hsl(var(--opal-pink)))"
-          />
-          <MiniMetric
-            icon={Clock}
-            label="Prochain"
-            value={nextEvent ? format(new Date(nextEvent.start_time), "HH:mm") + " · " + nextEvent.title : "Rien de prévu"}
-            gradient="linear-gradient(135deg, hsl(var(--opal-green)), hsl(var(--opal-purple)))"
-          />
-        </div>
+        {/* Mini‑metrics row — horizontal scroll on mobile, grid on desktop */}
+        <motion.div
+          className="flex sm:grid sm:grid-cols-3 gap-2 sm:gap-3 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:overflow-visible"
+          style={{ scrollbarWidth: "none" }}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.05 }}
+        >
+          <div className="min-w-[140px] sm:min-w-0 flex-shrink-0 sm:flex-shrink">
+            <MiniMetric
+              icon={Battery}
+              label="Charge"
+              value={`${pendingCount} tâche${pendingCount !== 1 ? "s" : ""}`}
+              gradient="linear-gradient(135deg, hsl(var(--opal-pink)), hsl(var(--opal-orange)))"
+            />
+          </div>
+          <div className="min-w-[130px] sm:min-w-0 flex-shrink-0 sm:flex-shrink">
+            <MiniMetric
+              icon={Brain}
+              label="Énergie"
+              value={energyLevel ? `${energyLevel}/10` : "—"}
+              gradient="linear-gradient(135deg, hsl(var(--opal-purple)), hsl(var(--opal-pink)))"
+            />
+          </div>
+          <div className="min-w-[130px] sm:min-w-0 flex-shrink-0 sm:flex-shrink">
+            <MiniMetric
+              icon={Clock}
+              label="Prochain"
+              value={nextEvent ? format(new Date(nextEvent.start_time), "HH:mm") : "—"}
+              gradient="linear-gradient(135deg, hsl(var(--opal-green)), hsl(var(--opal-purple)))"
+            />
+          </div>
+        </motion.div>
 
         {/* ── 2. CARTE PRINCIPALE — "Ce qui compte maintenant" ── */}
         <motion.div
-          className="relative rounded-[28px] overflow-hidden"
+          className="relative rounded-[24px] sm:rounded-[28px] overflow-hidden"
           style={{
             background: "linear-gradient(160deg, hsl(var(--opal-purple) / 0.08), hsl(var(--opal-pink) / 0.06), hsl(var(--opal-green) / 0.04))",
             boxShadow: "0 8px 40px -8px hsla(250,60%,52%,0.1)",
@@ -187,44 +187,43 @@ const WorkSpacePage = () => {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.55, delay: 0.1 }}
         >
-          <div className="px-7 py-8 space-y-5">
+          <div className="px-5 sm:px-7 py-6 sm:py-8 space-y-4 sm:space-y-5">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-opal-purple" />
-              <span className="text-xs font-bold uppercase tracking-widest text-opal-purple">Ce qui compte maintenant</span>
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-opal-purple" />
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-opal-purple">
+                Ce qui compte maintenant
+              </span>
             </div>
 
-            <p className="text-base text-foreground/80 leading-relaxed">{insight}</p>
+            <p className="text-sm sm:text-base text-foreground/80 leading-relaxed">{insight}</p>
 
             {topTask && (
-              <div className="rounded-[16px] bg-card/70 backdrop-blur-sm border border-border/20 px-5 py-3.5">
-                <p className="text-sm font-semibold text-foreground">{topTask.action_label}</p>
+              <div className="rounded-[14px] sm:rounded-[16px] bg-card/70 backdrop-blur-sm border border-border/20 px-4 sm:px-5 py-3">
+                <p className="text-sm font-semibold text-foreground truncate">{topTask.action_label}</p>
                 {topTask.estimated_duration && (
                   <p className="text-xs text-muted-foreground mt-0.5">{topTask.estimated_duration} min estimées</p>
                 )}
               </div>
             )}
 
-            <Link to="/global/tasks">
-              <motion.button
-                className="w-full rounded-full py-3.5 font-bold text-white text-sm flex items-center justify-center gap-2"
-                style={{
-                  background: "linear-gradient(135deg, hsl(var(--opal-purple)), hsl(var(--opal-pink)))",
-                  boxShadow: "0 6px 28px -4px hsl(var(--opal-purple) / 0.35)",
-                }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Play className="w-4 h-4" />
-                Se mettre au travail
-              </motion.button>
-            </Link>
+            <button
+              onClick={() => navigate("/global/tasks")}
+              className="w-full rounded-full py-3 sm:py-3.5 font-bold text-white text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+              style={{
+                background: "linear-gradient(135deg, hsl(var(--opal-purple)), hsl(var(--opal-pink)))",
+                boxShadow: "0 6px 28px -4px hsl(var(--opal-purple) / 0.35)",
+              }}
+            >
+              <Play className="w-4 h-4" />
+              Se mettre au travail
+            </button>
           </div>
         </motion.div>
 
         {/* ── 3. TÂCHES DU JOUR (max 3) ── */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-foreground">Tâches du jour</h2>
+            <h2 className="text-sm sm:text-base font-bold text-foreground">Tâches du jour</h2>
             <Link to="/global/tasks" className="text-xs text-opal-purple font-semibold hover:underline flex items-center gap-1">
               Voir tout <ArrowRight className="w-3 h-3" />
             </Link>
@@ -238,7 +237,7 @@ const WorkSpacePage = () => {
               })}
             </div>
           ) : (
-            <div className="rounded-[18px] px-5 py-6 text-center bg-card border border-border/30"
+            <div className="rounded-[18px] px-5 py-5 text-center bg-card border border-border/30"
               style={{ boxShadow: "0 2px 16px -2px hsla(0,0%,0%,0.04)" }}>
               <p className="text-sm text-muted-foreground">Aucune tâche pour aujourd'hui 🎉</p>
             </div>
@@ -248,7 +247,7 @@ const WorkSpacePage = () => {
         {/* ── 4. PLANNING DU JOUR ── */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+            <h2 className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
               <Calendar className="w-4 h-4 text-opal-green" />
               Planning
             </h2>
@@ -258,11 +257,9 @@ const WorkSpacePage = () => {
           </div>
 
           {nextEvent ? (
-            <motion.div
-              className="rounded-[18px] px-5 py-4 bg-card border border-border/30 flex items-center gap-3"
+            <div
+              className="rounded-[18px] px-4 sm:px-5 py-4 bg-card border border-border/30 flex items-center gap-3"
               style={{ boxShadow: "0 2px 16px -2px hsla(0,0%,0%,0.05)" }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
             >
               <div
                 className="w-1.5 h-10 rounded-full shrink-0"
@@ -274,7 +271,7 @@ const WorkSpacePage = () => {
                   {format(new Date(nextEvent.start_time), "HH:mm")} — {format(new Date(nextEvent.end_time), "HH:mm")}
                 </p>
               </div>
-            </motion.div>
+            </div>
           ) : (
             <div className="rounded-[18px] px-5 py-5 text-center bg-card border border-border/30"
               style={{ boxShadow: "0 2px 16px -2px hsla(0,0%,0%,0.04)" }}>
@@ -285,7 +282,7 @@ const WorkSpacePage = () => {
 
         {/* ── 5. INSIGHT IA ── */}
         <motion.div
-          className="rounded-[22px] px-6 py-5 border border-opal-purple/15"
+          className="rounded-[20px] sm:rounded-[22px] px-5 sm:px-6 py-4 sm:py-5 border border-opal-purple/15"
           style={{
             background: "linear-gradient(145deg, hsl(var(--opal-purple) / 0.05), hsl(var(--opal-pink) / 0.03))",
             boxShadow: "0 4px 24px -4px hsl(var(--opal-purple) / 0.08)",
@@ -299,7 +296,7 @@ const WorkSpacePage = () => {
               style={{ background: "linear-gradient(135deg, hsl(var(--opal-purple)), hsl(var(--opal-pink)))" }}>
               <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-bold uppercase tracking-wider text-opal-purple mb-1">Insight</p>
               <p className="text-sm text-foreground/80 leading-relaxed">{insight}</p>
             </div>
@@ -307,12 +304,7 @@ const WorkSpacePage = () => {
         </motion.div>
 
         {/* ── 6. GAMIFICATION ── */}
-        <motion.div
-          className="flex items-center justify-center gap-5 py-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-        >
+        <div className="flex items-center justify-center gap-4 sm:gap-5 py-3 sm:py-4">
           {[
             { icon: Trophy, label: `Niv. ${level}`, color: "text-opal-orange" },
             { icon: Zap, label: `${xp} XP`, color: "text-opal-purple" },
@@ -323,7 +315,7 @@ const WorkSpacePage = () => {
               <span className="text-xs font-bold text-muted-foreground">{item.label}</span>
             </div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </PageTransition>
   );
