@@ -82,6 +82,10 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
         surface: "hsl(var(--surface))",
+        charcoal: {
+          DEFAULT: "hsl(var(--charcoal))",
+          light: "hsl(var(--charcoal-light))",
+        },
         opal: {
           pink: "hsl(var(--opal-pink))",
           green: "hsl(var(--opal-green))",

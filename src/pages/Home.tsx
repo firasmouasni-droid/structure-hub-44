@@ -111,156 +111,142 @@ const Home = () => {
   })();
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <PageTransition>
-        <div className="max-w-5xl mx-auto px-5 py-6 space-y-7">
+        <div className="max-w-5xl mx-auto px-5 py-6 space-y-8">
           {/* ── Header profil ── */}
           <motion.div
-            className="relative overflow-hidden rounded-[32px] p-6 sm:p-8"
-            style={{
-              background: "linear-gradient(135deg, hsla(340,100%,73%,0.18) 0%, hsla(30,100%,73%,0.12) 30%, hsla(250,100%,74%,0.10) 60%, hsla(160,65%,63%,0.12) 100%)"
-            }}
-            initial={{ opacity: 0, y: -20 }}
+            className="pt-2"
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.4 }}
           >
-            {/* Decorative blobs */}
-            <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full opacity-20" style={{ background: "radial-gradient(circle, hsla(340,100%,73%,0.6), transparent 70%)" }} />
-            <div className="absolute -bottom-20 -left-20 w-56 h-56 rounded-full opacity-15" style={{ background: "radial-gradient(circle, hsla(160,65%,63%,0.6), transparent 70%)" }} />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="relative shrink-0">
+                  <motion.button
+                    onClick={() => setAvatarMenuOpen(prev => !prev)}
+                    className="w-14 h-14 rounded-full overflow-hidden cursor-pointer ring-2 ring-border/50 hover:ring-primary/40 transition-all"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-muted flex items-center justify-center">
+                        <User className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                    )}
+                  </motion.button>
 
-            <div className="relative z-10 flex items-center gap-4">
-              <div className="relative shrink-0">
-                <motion.button
-                  onClick={() => setAvatarMenuOpen(prev => !prev)}
-                  className="w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-[24px] overflow-hidden cursor-pointer border-3 border-white/50 hover:border-white/80 transition-all"
-                  style={{ boxShadow: "0 8px 32px rgba(139,124,255,0.25)" }}
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  {profile?.avatar_url ? (
-                    <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #ff7aa8, #8b7cff, #63dfb4)" }}>
-                      <User className="w-8 h-8 text-white" />
-                    </div>
-                  )}
-                </motion.button>
-
-                <AnimatePresence>
-                  {avatarMenuOpen && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setAvatarMenuOpen(false)} />
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9, y: -5 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9, y: -5 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute top-full left-0 mt-2 z-50 w-48 bg-card border border-border/20 rounded-[20px] shadow-[0_16px_48px_rgba(0,0,0,0.12)] overflow-hidden"
-                      >
-                        <button onClick={() => { setAvatarMenuOpen(false); navigate("/profile"); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted/50 transition-colors">
-                          <User className="w-4 h-4" /> Profil
-                        </button>
-                        <button onClick={() => { setAvatarMenuOpen(false); navigate("/settings"); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted/50 transition-colors">
-                          <Settings className="w-4 h-4" /> Paramètres
-                        </button>
-                        <div className="h-px bg-border/50" />
-                        <button onClick={() => { setAvatarMenuOpen(false); signOut(); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-destructive hover:bg-destructive/5 transition-colors">
-                          <LogOut className="w-4 h-4" /> Déconnexion
-                        </button>
-                      </motion.div>
-                    </>
-                  )}
-                </AnimatePresence>
+                  <AnimatePresence>
+                    {avatarMenuOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setAvatarMenuOpen(false)} />
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                          transition={{ duration: 0.12 }}
+                          className="absolute top-full left-0 mt-2 z-50 w-48 bg-card border border-border/50 rounded-2xl shadow-lg overflow-hidden"
+                        >
+                          <button onClick={() => { setAvatarMenuOpen(false); navigate("/profile"); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted/50 transition-colors">
+                            <User className="w-4 h-4" /> Profil
+                          </button>
+                          <button onClick={() => { setAvatarMenuOpen(false); navigate("/settings"); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted/50 transition-colors">
+                            <Settings className="w-4 h-4" /> Paramètres
+                          </button>
+                          <div className="h-px bg-border/50" />
+                          <button onClick={() => { setAvatarMenuOpen(false); signOut(); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-destructive hover:bg-destructive/5 transition-colors">
+                            <LogOut className="w-4 h-4" /> Déconnexion
+                          </button>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
+                <div>
+                  <h1 className="text-2xl font-extrabold text-foreground tracking-tight">
+                    {profile?.display_name || "Mon Life OS"}
+                  </h1>
+                  <p className="text-sm text-muted-foreground capitalize">
+                    {format(new Date(), "EEEE d MMMM", { locale: fr })}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground leading-tight tracking-tight">
-                  Hello, {profile?.display_name || "toi"} 👋
-                </h1>
-                <p className="text-sm text-muted-foreground mt-1 capitalize">
-                  {format(new Date(), "EEEE d MMMM yyyy", { locale: fr })}
-                </p>
+              <div className="flex items-center gap-2">
+                <span className="rounded-full px-3 py-1 bg-muted text-xs font-bold text-foreground">🔥 {stats?.streak_days ?? 0}</span>
+                <ThemeToggle />
               </div>
             </div>
 
             {/* Level bar */}
-            <div className="relative z-10 mt-5 flex items-center gap-3">
-              <span className="rounded-full px-3 py-1.5 text-xs font-extrabold text-white shadow-lg" style={{ background: "linear-gradient(135deg, #ff7aa8, #8b7cff)" }}>⭐ Niv. {level}</span>
-              <div className="flex-1 h-2 bg-white/40 rounded-full overflow-hidden backdrop-blur-sm">
+            <div className="mt-4 flex items-center gap-3">
+              <span className="rounded-full px-3 py-1.5 bg-charcoal text-xs font-bold text-white">⭐ Niv. {level}</span>
+              <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                 <motion.div
-                  className="h-full rounded-full"
-                  style={{ background: "linear-gradient(90deg, #ff7aa8, #8b7cff, #63dfb4)" }}
+                  className="h-full rounded-full bg-opal-green"
                   initial={{ width: 0 }}
                   animate={{ width: `${xpPercent}%` }}
                   transition={{ duration: 1, ease: "easeOut" }}
                 />
               </div>
-              <span className="text-xs font-bold text-foreground/70">{xp} XP</span>
+              <span className="text-xs text-muted-foreground font-medium">{xp} XP</span>
             </div>
 
-            {/* Motivational + Actions */}
-            <motion.p className="relative z-10 text-sm text-foreground/70 mt-3 font-medium" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
-              {motivationalPhrase}
-            </motion.p>
-
-            <div className="relative z-10 flex items-center justify-between mt-4">
-              <motion.button
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.7 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setAuditOpen(true)}
-                className="rounded-full px-5 py-2.5 bg-white/80 backdrop-blur-sm shadow-[0_4px_20px_rgba(0,0,0,0.06)] flex items-center gap-2 cursor-pointer hover:bg-white transition-all border border-white/50"
-              >
-                <Sun className="w-4 h-4 text-warning" />
-                <span className="text-xs font-bold text-foreground">Check-in</span>
-              </motion.button>
-              <div className="flex items-center gap-3">
-                <ThemeToggle />
-                <motion.button
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 1.0 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => signOut()}
-                  className="rounded-full p-2.5 bg-white/80 backdrop-blur-sm shadow-[0_4px_20px_rgba(0,0,0,0.06)] cursor-pointer hover:bg-destructive/10 transition-all border border-white/50"
-                  title="Se déconnecter"
-                >
-                  <LogOut className="w-4 h-4 text-muted-foreground" />
-                </motion.button>
-              </div>
-            </div>
+            <p className="text-sm text-muted-foreground mt-3">{motivationalPhrase}</p>
           </motion.div>
 
-          {/* ── QG Général + Raccourcis ── */}
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="space-y-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <Link to="/life-hq">
-                <GradientCard gradient="opal" glow className="p-5 flex flex-col items-center gap-3 text-center h-full">
-                  <div className="w-14 h-14 rounded-[20px] flex items-center justify-center shadow-lg" style={{ background: "linear-gradient(135deg, #ff7aa8, #8b7cff, #63dfb4)" }}>
-                    <Brain className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="text-sm font-extrabold text-foreground">QG Général</span>
-                  <span className="text-[11px] text-muted-foreground leading-tight">Cockpit stratégique</span>
-                </GradientCard>
-              </Link>
+          {/* ── Quick Actions ── */}
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="flex gap-3">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setAuditOpen(true)}
+              className="rounded-full px-5 py-2.5 bg-charcoal text-white text-sm font-semibold flex items-center gap-2"
+            >
+              <Sun className="w-4 h-4" />
+              Check-in du matin
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => signOut()}
+              className="rounded-full p-2.5 bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+              title="Se déconnecter"
+            >
+              <LogOut className="w-4 h-4" />
+            </motion.button>
+          </motion.div>
+
+          {/* ── Shortcuts Grid ── */}
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: "Tâches", sub: "Tous espaces", icon: CheckSquare, path: "/global/tasks", bg: "linear-gradient(135deg, #ff7aa8, #ff9ff3)", color: "#ff7aa8" },
-                { label: "Planning", sub: "Planning global", icon: Calendar, path: "/global/planning", bg: "linear-gradient(135deg, #8b7cff, #a78bfa)", color: "#8b7cff" },
-                { label: "Coach IA", sub: "Conseils perso", icon: Bot, path: "/global/coach", bg: "linear-gradient(135deg, #63dfb4, #8af7c4)", color: "#63dfb4" },
+                { label: "QG Général", sub: "Cockpit stratégique", icon: Brain, path: "/life-hq", accent: true },
+                { label: "Tâches", sub: "Tous espaces", icon: CheckSquare, path: "/global/tasks" },
+                { label: "Planning", sub: "Planning global", icon: Calendar, path: "/global/planning" },
+                { label: "Coach IA", sub: "Conseils perso", icon: Bot, path: "/global/coach" },
               ].map((item) => (
                 <Link key={item.path} to={item.path}>
-                  <GradientCard gradient="none" className="p-5 flex flex-col items-center gap-3 cursor-pointer text-center h-full hover:border-primary/20 border border-border/10 transition-all">
-                    <div className="w-14 h-14 rounded-[20px] flex items-center justify-center shadow-md" style={{ background: item.bg }}>
-                      <item.icon className="w-6 h-6 text-white" />
+                  <motion.div
+                    whileHover={{ y: -3 }}
+                    className={`rounded-[20px] p-5 flex flex-col gap-3 h-full transition-colors ${
+                      item.accent 
+                        ? "bg-charcoal text-white" 
+                        : "bg-card border border-border/40 hover:border-border"
+                    }`}
+                  >
+                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${
+                      item.accent ? "bg-white/15" : "bg-muted"
+                    }`}>
+                      <item.icon className={`w-5 h-5 ${item.accent ? "text-white" : "text-foreground"}`} />
                     </div>
-                    <span className="text-sm font-extrabold text-foreground">{item.label}</span>
-                    <span className="text-[11px] text-muted-foreground leading-tight">{item.sub}</span>
-                  </GradientCard>
+                    <div>
+                      <span className={`text-sm font-bold block ${item.accent ? "text-white" : "text-foreground"}`}>{item.label}</span>
+                      <span className={`text-[11px] ${item.accent ? "text-white/60" : "text-muted-foreground"}`}>{item.sub}</span>
+                    </div>
+                  </motion.div>
                 </Link>
               ))}
             </div>
@@ -268,46 +254,38 @@ const Home = () => {
 
           {/* ── Tâches urgentes ── */}
           {urgentTasks.length > 0 && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-foreground">Tâches urgentes</h2>
-                <Link to="/global/tasks" className="text-xs text-primary font-medium hover:underline flex items-center gap-1">Toutes <ArrowRight className="w-3 h-3" /></Link>
-              </div>
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="space-y-3">
+              <h2 className="text-lg font-bold text-foreground tracking-tight">Tâches urgentes</h2>
               <AnimatePresence mode="popLayout">
                 {urgentTasks.map(t => {
                   const struct = structures.find(s => s.id === t.structure_id);
-                  const priorityStyle: Record<string, string> = {
-                    critical: "bg-destructive/10 text-destructive",
-                    high: "bg-warning/10 text-warning-foreground",
-                    medium: "bg-primary/10 text-primary",
-                    low: "bg-muted text-muted-foreground",
-                  };
                   return (
-                    <motion.div key={t.id} layout initial={{ opacity: 1 }} exit={{ opacity: 0, x: 80, height: 0 }} transition={{ duration: 0.35, ease: "easeInOut" }}>
-                      <div className="bg-card rounded-3xl shadow-opal p-4 flex items-center gap-4">
+                    <motion.div key={t.id} layout initial={{ opacity: 1 }} exit={{ opacity: 0, x: 80, height: 0 }} transition={{ duration: 0.3 }}>
+                      <div className="rounded-[16px] bg-card border border-border/40 p-4 flex items-center gap-4">
                         <motion.button
-                          whileHover={{ scale: 1.15 }}
                           whileTap={{ scale: 0.9 }}
                           onClick={() => { updateTask.mutate({ id: t.id, status: "done" }); toast.success(`"${t.action_label}" terminée ✓`); }}
-                          className="w-9 h-9 rounded-2xl bg-muted/50 hover:bg-success/15 flex items-center justify-center shrink-0 transition-colors group"
+                          className="w-8 h-8 rounded-full border-2 border-border hover:border-opal-green hover:bg-opal-green/10 flex items-center justify-center shrink-0 transition-colors group"
                         >
-                          <Circle className="w-5 h-5 text-muted-foreground group-hover:hidden" />
-                          <CheckCircle2 className="w-5 h-5 text-success hidden group-hover:block" />
+                          <Circle className="w-4 h-4 text-muted-foreground group-hover:hidden" />
+                          <CheckCircle2 className="w-4 h-4 text-opal-green hidden group-hover:block" />
                         </motion.button>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-foreground truncate">{t.action_label}</p>
-                          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                          <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5">
                             {struct && <span>{struct.name}</span>}
                             {t.due_date && <span>· {t.due_date === todayStr ? "Aujourd'hui" : format(new Date(t.due_date), "d MMM", { locale: fr })}</span>}
-                            {t.estimated_duration && <span>· {t.estimated_duration} min</span>}
                           </div>
                         </div>
-                        <span className={`pill px-2 py-0.5 text-[10px] font-bold ${priorityStyle[t.priority] ?? priorityStyle.medium}`}>{t.priority}</span>
+                        <span className="rounded-full px-2.5 py-1 bg-charcoal text-[10px] font-bold text-white">{t.priority}</span>
                       </div>
                     </motion.div>
                   );
                 })}
               </AnimatePresence>
+              <Link to="/global/tasks" className="text-xs text-muted-foreground font-medium hover:text-foreground flex items-center gap-1 justify-center pt-1">
+                Voir toutes les tâches <ArrowRight className="w-3 h-3" />
+              </Link>
             </motion.div>
           )}
 
