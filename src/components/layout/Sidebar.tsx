@@ -65,7 +65,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
     cn(
       "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150",
       isActive
-        ? "bg-charcoal text-white"
+        ? "bg-primary/10 text-primary font-semibold"
         : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
     );
 
@@ -74,7 +74,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
       {/* Logo */}
       <div className="px-5 py-5">
         <Link to="/" onClick={onNavigate} className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-charcoal flex items-center justify-center">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, hsl(var(--opal-purple)), hsl(var(--opal-pink)))" }}>
             <Brain className="w-4 h-4 text-white" />
           </div>
           <div>
@@ -106,7 +106,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
             className={cn(
               "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150",
               isOnWorkRoute
-                ? "bg-charcoal text-white"
+                ? "bg-primary/10 text-primary font-semibold"
                 : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
             )}
           >
@@ -219,10 +219,10 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
             <span className="font-bold text-foreground">Niveau {level}</span>
             <span className="text-muted-foreground">{xp} XP</span>
           </div>
-          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+          <div className="h-2 bg-muted rounded-full overflow-hidden">
             <div
-              className="h-full rounded-full bg-opal-green transition-all duration-500"
-              style={{ width: `${xpPercent}%` }}
+              className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${xpPercent}%`, background: "linear-gradient(90deg, hsl(var(--opal-pink)), hsl(var(--opal-purple)), hsl(var(--opal-green)))" }}
             />
           </div>
         </div>

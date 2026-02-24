@@ -182,10 +182,11 @@ const Home = () => {
 
             {/* Level bar */}
             <div className="mt-4 flex items-center gap-3">
-              <span className="rounded-full px-3 py-1.5 bg-charcoal text-xs font-bold text-white">⭐ Niv. {level}</span>
-              <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+              <span className="rounded-full px-3 py-1.5 text-xs font-bold text-white" style={{ background: "linear-gradient(135deg, hsl(var(--opal-pink)), hsl(var(--opal-purple)))" }}>⭐ Niv. {level}</span>
+              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                 <motion.div
-                  className="h-full rounded-full bg-opal-green"
+                  className="h-full rounded-full"
+                  style={{ background: "linear-gradient(90deg, hsl(var(--opal-pink)), hsl(var(--opal-purple)), hsl(var(--opal-green)))" }}
                   initial={{ width: 0 }}
                   animate={{ width: `${xpPercent}%` }}
                   transition={{ duration: 1, ease: "easeOut" }}
@@ -203,7 +204,8 @@ const Home = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => setAuditOpen(true)}
-              className="rounded-full px-5 py-2.5 bg-charcoal text-white text-sm font-semibold flex items-center gap-2"
+              className="rounded-full px-5 py-2.5 text-white text-sm font-semibold flex items-center gap-2 shadow-lg"
+              style={{ background: "linear-gradient(135deg, hsl(var(--opal-purple)), hsl(var(--opal-pink)))" }}
             >
               <Sun className="w-4 h-4" />
               Check-in du matin
@@ -222,10 +224,10 @@ const Home = () => {
           {/* ── Shortcuts Grid ── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: "QG Général", sub: "Cockpit stratégique", icon: Brain, path: "/life-hq", accent: true },
-                { label: "Tâches", sub: "Tous espaces", icon: CheckSquare, path: "/global/tasks" },
-                { label: "Planning", sub: "Planning global", icon: Calendar, path: "/global/planning" },
-                { label: "Coach IA", sub: "Conseils perso", icon: Bot, path: "/global/coach" },
+                { label: "QG Général", sub: "Cockpit stratégique", icon: Brain, path: "/life-hq", bg: "bg-gradient-to-br from-opal-purple/15 to-opal-pink/10", iconBg: "bg-opal-purple/20", iconColor: "text-opal-purple" },
+                { label: "Tâches", sub: "Tous espaces", icon: CheckSquare, path: "/global/tasks", bg: "bg-gradient-to-br from-opal-green/15 to-opal-green/5", iconBg: "bg-opal-green/20", iconColor: "text-opal-green" },
+                { label: "Planning", sub: "Planning global", icon: Calendar, path: "/global/planning", bg: "bg-gradient-to-br from-accent/15 to-accent/5", iconBg: "bg-accent/20", iconColor: "text-accent" },
+                { label: "Coach IA", sub: "Conseils perso", icon: Bot, path: "/global/coach", bg: "bg-gradient-to-br from-opal-pink/15 to-opal-orange/10", iconBg: "bg-opal-pink/20", iconColor: "text-opal-pink" },
               ].map((item, idx) => (
                 <Link key={item.path} to={item.path}>
                   <motion.div
@@ -233,20 +235,14 @@ const Home = () => {
                     initial={{ opacity: 0, y: 20, scale: 0.93 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 0.2 + idx * 0.08, duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
-                    className={`rounded-[20px] p-5 flex flex-col gap-3 h-full transition-colors ${
-                      item.accent 
-                        ? "bg-charcoal text-white" 
-                        : "bg-card border border-border/40 hover:border-border"
-                    }`}
+                    className={`rounded-[20px] p-5 flex flex-col gap-3 h-full border border-border/30 hover:border-border/60 transition-all ${item.bg}`}
                   >
-                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${
-                      item.accent ? "bg-white/15" : "bg-muted"
-                    }`}>
-                      <item.icon className={`w-5 h-5 ${item.accent ? "text-white" : "text-foreground"}`} />
+                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${item.iconBg}`}>
+                      <item.icon className={`w-5 h-5 ${item.iconColor}`} />
                     </div>
                     <div>
-                      <span className={`text-sm font-bold block ${item.accent ? "text-white" : "text-foreground"}`}>{item.label}</span>
-                      <span className={`text-[11px] ${item.accent ? "text-white/60" : "text-muted-foreground"}`}>{item.sub}</span>
+                      <span className="text-sm font-bold block text-foreground">{item.label}</span>
+                      <span className="text-[11px] text-muted-foreground">{item.sub}</span>
                     </div>
                   </motion.div>
                 </Link>
@@ -278,7 +274,11 @@ const Home = () => {
                             {t.due_date && <span>· {t.due_date === todayStr ? "Aujourd'hui" : format(new Date(t.due_date), "d MMM", { locale: fr })}</span>}
                           </div>
                         </div>
-                        <span className="rounded-full px-2.5 py-1 bg-charcoal text-[10px] font-bold text-white">{t.priority}</span>
+                        <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold text-white ${
+                          t.priority === "critical" ? "bg-destructive" : 
+                          t.priority === "high" ? "bg-opal-pink" : 
+                          t.priority === "medium" ? "bg-opal-orange" : "bg-muted-foreground"
+                        }`}>{t.priority}</span>
                       </div>
                     </motion.div>
                   );

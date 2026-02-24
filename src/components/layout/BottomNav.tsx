@@ -40,12 +40,12 @@ export const BottomNav = () => {
                   {isActive && (
                     <motion.div
                       layoutId="bottomnav-active"
-                      className="absolute -inset-2.5 rounded-2xl bg-charcoal/8"
+                      className="absolute -inset-2.5 rounded-2xl bg-primary/10"
                       transition={{ type: "spring", stiffness: 350, damping: 30 }}
                     />
                   )}
                   <item.icon
-                    className={`w-[22px] h-[22px] relative z-10 transition-colors duration-200 ${isActive ? "text-foreground" : "text-muted-foreground"}`}
+                    className={`w-[22px] h-[22px] relative z-10 transition-colors duration-200 ${isActive ? "text-primary" : "text-muted-foreground"}`}
                     strokeWidth={isActive ? 2.5 : 1.8}
                   />
                   {badge && (
@@ -54,7 +54,7 @@ export const BottomNav = () => {
                     </span>
                   )}
                 </div>
-                <span className={`text-[10px] transition-colors duration-200 ${isActive ? "text-foreground font-semibold" : "text-muted-foreground"}`}>
+                <span className={`text-[10px] transition-colors duration-200 ${isActive ? "text-primary font-semibold" : "text-muted-foreground"}`}>
                   {item.label}
                 </span>
               </Link>

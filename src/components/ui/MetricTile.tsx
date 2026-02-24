@@ -30,9 +30,10 @@ export const MetricTile = ({ icon, label, value, sub, progress, iconBg = "bg-pri
     <div className="text-2xl font-bold text-foreground">{value}</div>
     {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
     {progress !== undefined && (
-      <div className="h-1.5 bg-muted rounded-pill overflow-hidden mt-3">
+      <div className="h-2 bg-muted rounded-pill overflow-hidden mt-3">
         <motion.div
-          className="h-full rounded-pill bg-gradient-to-r from-primary to-accent"
+          className="h-full rounded-pill"
+          style={{ background: "linear-gradient(90deg, hsl(var(--opal-pink)), hsl(var(--opal-purple)), hsl(var(--opal-green)))" }}
           initial={{ width: 0 }}
           whileInView={{ width: `${Math.min(progress, 100)}%` }}
           viewport={{ once: true }}
