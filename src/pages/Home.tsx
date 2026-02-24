@@ -220,17 +220,19 @@ const Home = () => {
           </motion.div>
 
           {/* ── Shortcuts Grid ── */}
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
                 { label: "QG Général", sub: "Cockpit stratégique", icon: Brain, path: "/life-hq", accent: true },
                 { label: "Tâches", sub: "Tous espaces", icon: CheckSquare, path: "/global/tasks" },
                 { label: "Planning", sub: "Planning global", icon: Calendar, path: "/global/planning" },
                 { label: "Coach IA", sub: "Conseils perso", icon: Bot, path: "/global/coach" },
-              ].map((item) => (
+              ].map((item, idx) => (
                 <Link key={item.path} to={item.path}>
                   <motion.div
-                    whileHover={{ y: -3 }}
+                    whileHover={{ y: -4, scale: 1.02 }}
+                    initial={{ opacity: 0, y: 20, scale: 0.93 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ delay: 0.2 + idx * 0.08, duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
                     className={`rounded-[20px] p-5 flex flex-col gap-3 h-full transition-colors ${
                       item.accent 
                         ? "bg-charcoal text-white" 
@@ -250,7 +252,6 @@ const Home = () => {
                 </Link>
               ))}
             </div>
-          </motion.div>
 
           {/* ── Tâches urgentes ── */}
           {urgentTasks.length > 0 && (

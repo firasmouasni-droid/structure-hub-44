@@ -12,7 +12,10 @@ interface GradientCardProps {
 
 export const GradientCard = ({ children, className, gradient = "none", onClick, glow }: GradientCardProps) => (
   <motion.div
-    whileHover={{ y: -2 }}
+    whileHover={{ y: -3, scale: 1.01 }}
+    initial={{ opacity: 0, y: 16, scale: 0.96 }}
+    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+    viewport={{ once: true }}
     transition={{ type: "spring", stiffness: 400, damping: 30 }}
     onClick={onClick}
     className={cn(
