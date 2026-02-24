@@ -45,12 +45,12 @@ function StatCard({ icon, label, value, sub, trend }: {
     <HoverCard className="card-soft p-5">
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs text-muted-foreground font-medium">{label}</span>
-        <div className="w-9 h-9 rounded-2xl bg-primary/15 flex items-center justify-center text-primary">{icon}</div>
+        <div className="w-9 h-9 rounded-2xl bg-charcoal flex items-center justify-center text-white">{icon}</div>
       </div>
       <div className="flex items-end gap-2">
         <span className="text-2xl font-bold text-foreground">{value}</span>
         {trend && (
-          <span className={`flex items-center text-xs font-bold ${trend === "up" ? "text-green-500" : trend === "down" ? "text-red-500" : "text-muted-foreground"}`}>
+          <span className={`flex items-center text-xs font-bold ${trend === "up" ? "text-opal-green" : trend === "down" ? "text-opal-pink" : "text-muted-foreground"}`}>
             {trend === "up" && <ArrowUpRight className="w-3.5 h-3.5" />}
             {trend === "down" && <ArrowDownRight className="w-3.5 h-3.5" />}
             {trend === "neutral" && <Minus className="w-3.5 h-3.5" />}
@@ -89,8 +89,8 @@ const GlobalAnalytics = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <motion.div className="w-12 h-12 rounded-3xl bg-primary/15 flex items-center justify-center shadow-soft shrink-0" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}>
-              <BarChart3 className="w-6 h-6 text-primary" />
+            <motion.div className="w-12 h-12 rounded-3xl flex items-center justify-center shadow-soft shrink-0" style={{ background: "linear-gradient(135deg, hsl(var(--opal-purple)), hsl(var(--opal-green)))" }} initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}>
+              <BarChart3 className="w-6 h-6 text-white" />
             </motion.div>
             <div className="min-w-0">
               <h1 className="text-xl sm:text-2xl font-bold text-foreground">Analytics & Feedback</h1>
@@ -99,7 +99,7 @@ const GlobalAnalytics = () => {
           </div>
           <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
             onClick={handleRefresh} disabled={isFetching}
-            className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-primary/15 text-primary text-sm font-bold hover:bg-primary/25 transition-all disabled:opacity-50 shrink-0">
+            className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-charcoal text-white text-sm font-bold hover:bg-charcoal-light transition-all disabled:opacity-50 shrink-0">
             <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
             {isFetching ? "Analyse..." : "Actualiser"}
           </motion.button>
@@ -281,9 +281,9 @@ const GlobalAnalytics = () => {
 
         {/* AI Insights */}
         <FadeInSection delay={0.2}>
-          <div className="card-soft p-6 border-l-4 border-primary">
+          <div className="card-soft p-6 border-l-4" style={{ borderColor: "hsl(var(--opal-purple))" }}>
             <div className="flex items-center gap-2 mb-4">
-              <Brain className="w-5 h-5 text-primary" />
+              <Brain className="w-5 h-5 text-opal-purple" />
               <h2 className="text-base font-bold text-foreground">Insights IA personnalisés</h2>
             </div>
             {isLoading || isFetching ? (
