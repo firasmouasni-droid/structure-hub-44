@@ -20,9 +20,9 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 4px)",
         sm: "calc(var(--radius) - 8px)",
-        xl: "1.375rem",
-        "2xl": "1.5rem",
-        "3xl": "1.75rem",
+        xl: "1.5rem",
+        "2xl": "1.75rem",
+        "3xl": "2rem",
         pill: "50px",
       },
       colors: {
@@ -82,11 +82,19 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
         surface: "hsl(var(--surface))",
+        opal: {
+          pink: "hsl(var(--opal-pink))",
+          green: "hsl(var(--opal-green))",
+          purple: "hsl(var(--opal-purple))",
+          orange: "hsl(var(--opal-orange))",
+        },
       },
       boxShadow: {
-        soft: "0 10px 30px rgba(0, 0, 0, 0.06)",
-        "soft-lg": "0 14px 40px rgba(0, 0, 0, 0.09)",
-        "inner-soft": "inset 0 2px 4px rgba(0, 0, 0, 0.04)",
+        soft: "0 4px 24px rgba(0, 0, 0, 0.04)",
+        "soft-lg": "0 8px 32px rgba(0, 0, 0, 0.06)",
+        "inner-soft": "inset 0 2px 4px rgba(0, 0, 0, 0.03)",
+        "opal": "0 4px 30px rgba(0, 0, 0, 0.03), 0 0 0 1px rgba(0, 0, 0, 0.02)",
+        "opal-hover": "0 8px 40px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.03)",
       },
       keyframes: {
         "accordion-down": {
