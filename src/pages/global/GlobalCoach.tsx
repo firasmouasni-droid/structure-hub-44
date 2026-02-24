@@ -106,8 +106,8 @@ const GlobalCoach = () => {
     <div className="flex flex-col h-[calc(100vh-80px)] lg:h-screen pb-20 lg:pb-0">
         <motion.div className="border-b border-border/30 bg-card/80 backdrop-blur-sm px-6 py-4" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
           <div className="flex items-center gap-3 max-w-4xl mx-auto">
-            <motion.div className="w-12 h-12 rounded-3xl gradient-warm flex items-center justify-center shadow-soft" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.1 }}>
-              <Bot className="w-6 h-6 text-primary-foreground" />
+            <motion.div className="w-12 h-12 rounded-3xl flex items-center justify-center shadow-soft" style={{ background: "linear-gradient(135deg, hsl(var(--opal-pink)), hsl(var(--opal-purple)))" }} initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.1 }}>
+              <Bot className="w-6 h-6 text-white" />
             </motion.div>
             <div>
               <h1 className="text-lg font-bold text-foreground">Coach IA global 🤖</h1>
@@ -121,8 +121,8 @@ const GlobalCoach = () => {
             <AnimatePresence initial={false}>
               {messages.map((msg, i) => (
                 <motion.div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`} initial={{ opacity: 0, y: 12, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.3 }}>
-                  {msg.role === "assistant" && <div className="w-8 h-8 rounded-2xl gradient-warm flex items-center justify-center mr-3 mt-1 shrink-0 shadow-soft"><Bot className="w-4 h-4 text-primary-foreground" /></div>}
-                  <div className={`max-w-[75%] rounded-3xl px-5 py-3.5 text-sm leading-relaxed ${msg.role === "user" ? "gradient-primary text-primary-foreground shadow-soft rounded-br-lg" : "bg-card/90 border border-border/30 text-foreground shadow-soft rounded-bl-lg"}`}>
+                  {msg.role === "assistant" && <div className="w-8 h-8 rounded-2xl flex items-center justify-center mr-3 mt-1 shrink-0 shadow-soft" style={{ background: "linear-gradient(135deg, hsl(var(--opal-pink)), hsl(var(--opal-purple)))" }}><Bot className="w-4 h-4 text-white" /></div>}
+                  <div className={`max-w-[75%] rounded-3xl px-5 py-3.5 text-sm leading-relaxed ${msg.role === "user" ? "bg-charcoal text-white shadow-soft rounded-br-lg" : "bg-card/90 border border-border/30 text-foreground shadow-soft rounded-bl-lg"}`}>
                     <div className="whitespace-pre-line">{msg.content}</div>
                   </div>
                 </motion.div>
@@ -130,7 +130,7 @@ const GlobalCoach = () => {
             </AnimatePresence>
             {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
               <motion.div className="flex justify-start" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-                <div className="w-8 h-8 rounded-2xl gradient-warm flex items-center justify-center mr-3 mt-1 shrink-0 shadow-soft"><Bot className="w-4 h-4 text-primary-foreground" /></div>
+                <div className="w-8 h-8 rounded-2xl flex items-center justify-center mr-3 mt-1 shrink-0 shadow-soft" style={{ background: "linear-gradient(135deg, hsl(var(--opal-pink)), hsl(var(--opal-purple)))" }}><Bot className="w-4 h-4 text-white" /></div>
                 <div className="bg-card/90 border border-border/30 rounded-3xl rounded-bl-lg px-5 py-3.5 text-sm text-muted-foreground shadow-soft">
                   <motion.span animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1.5 }}>Réflexion en cours...</motion.span>
                 </div>
@@ -152,7 +152,7 @@ const GlobalCoach = () => {
         <motion.div className="border-t border-border/30 bg-card/80 backdrop-blur-sm p-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <div className="max-w-4xl mx-auto flex gap-3">
             <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage()} placeholder="Demande à ton coach IA global..." className="flex-1 px-5 py-3.5 rounded-2xl border border-border bg-card/90 text-sm text-foreground placeholder:text-muted-foreground shadow-inner-soft focus:outline-none focus:ring-2 focus:ring-primary/30" />
-            <motion.button onClick={() => sendMessage()} disabled={isLoading} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-5 py-3.5 rounded-2xl gradient-primary text-primary-foreground shadow-soft">
+            <motion.button onClick={() => sendMessage()} disabled={isLoading} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-5 py-3.5 rounded-2xl bg-charcoal text-white shadow-soft">
               <Send className="w-5 h-5" />
             </motion.button>
           </div>

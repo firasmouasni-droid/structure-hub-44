@@ -1004,8 +1004,8 @@ const GlobalPlanning = () => {
       <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
-            <motion.div className="w-12 h-12 rounded-3xl bg-accent/15 flex items-center justify-center" initial={{ scale: 0, rotate: -180 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}>
-              <CalendarDays className="w-6 h-6 text-accent" />
+            <motion.div className="w-12 h-12 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, hsl(var(--accent)), hsl(var(--opal-purple)))" }} initial={{ scale: 0, rotate: -180 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}>
+              <CalendarDays className="w-6 h-6 text-white" />
             </motion.div>
             <div>
               <h1 className="text-2xl font-bold text-foreground">Planning global</h1>
@@ -1021,7 +1021,7 @@ const GlobalPlanning = () => {
               <Compass className="w-4 h-4" />
               Mode guidé
             </motion.button>
-            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={handleAutoplan} disabled={autoplanning} className="flex items-center gap-2 px-5 py-2.5 rounded-2xl gradient-primary text-primary-foreground text-sm font-bold shadow-soft disabled:opacity-70">
+            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={handleAutoplan} disabled={autoplanning} className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-charcoal text-white text-sm font-bold shadow-soft disabled:opacity-70">
               {autoplanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
               {autoplanning ? "Planification..." : "Auto-planifier via IA"}
             </motion.button>
