@@ -99,7 +99,7 @@ const GlobalDashboard = () => {
               <div className="rounded-full px-4 py-2 bg-white/80 backdrop-blur-sm shadow-[0_4px_16px_rgba(0,0,0,0.06)] flex items-center gap-2 border border-white/50">
                 <Flame className="w-3.5 h-3.5 text-warning" /><span className="text-xs font-bold text-foreground">{streak}j</span>
               </div>
-              <div className="rounded-full px-4 py-2 shadow-lg flex items-center gap-2" style={{ background: "linear-gradient(135deg, #ff7aa8, #8b7cff)" }}>
+              <div className="rounded-full px-4 py-2 shadow-lg flex items-center gap-2 bg-charcoal">
                 <Zap className="w-3.5 h-3.5 text-white" /><span className="text-xs font-bold text-white">Niv. {level}</span>
               </div>
             </div>
@@ -265,7 +265,7 @@ const GlobalDashboard = () => {
 
             {/* Coach IA */}
             <StaggerItem>
-              <GradientCard gradient="purple" className="p-5 border-l-4 border-primary">
+              <GradientCard gradient="purple" className="p-5 border-l-4 border-charcoal">
                 <div className="flex items-center gap-2 mb-2"><Bot className="w-4 h-4 text-primary" /><h2 className="text-sm font-bold text-foreground">Conseils IA</h2></div>
                 <p className="text-sm text-foreground leading-relaxed">
                   Tu as {remaining} tâches restantes. {importantTasks.length > 0 ? `${importantTasks.length} sont urgentes ! 🎯` : "Tout roule ! ✨"}
