@@ -46,7 +46,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
       <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background">
         {/* Mobile top bar */}
-        <div className="sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-card/90 backdrop-blur-2xl border-b border-border/30 lg:hidden transition-colors duration-300">
+        <div className="sticky top-0 z-30 flex items-center gap-3 px-4 py-3 lg:hidden transition-colors duration-300" style={{ background: "hsla(0,0%,100%,0.92)", backdropFilter: "blur(24px) saturate(1.8)", WebkitBackdropFilter: "blur(24px) saturate(1.8)", borderBottom: "1px solid hsla(0,0%,0%,0.04)" }}>
           <button
             onClick={() => setMobileOpen(true)}
             className="p-2 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
@@ -54,8 +54,8 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             <Menu className="w-5 h-5 text-foreground" />
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-opal-pink via-opal-purple to-accent flex items-center justify-center">
-              <span className="text-white text-[10px] font-bold">SC</span>
+            <div className="w-8 h-8 rounded-[12px] flex items-center justify-center shadow-md" style={{ background: "linear-gradient(135deg, #ff7aa8, #8b7cff, #63dfb4)" }}>
+              <span className="text-white text-[10px] font-extrabold">SC</span>
             </div>
             <span className="text-sm font-bold text-foreground">Second Cerveau</span>
           </div>

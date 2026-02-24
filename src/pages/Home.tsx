@@ -111,24 +111,29 @@ const Home = () => {
   })();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <PageTransition>
         <div className="max-w-5xl mx-auto px-5 py-6 space-y-7">
           {/* ── Header profil ── */}
           <motion.div
-            className="relative overflow-hidden rounded-3xl p-6 sm:p-8"
+            className="relative overflow-hidden rounded-[32px] p-6 sm:p-8"
             style={{
-              background: "linear-gradient(135deg, hsl(var(--opal-pink) / 0.08), hsl(var(--opal-orange) / 0.06), hsl(var(--opal-green) / 0.04))"
+              background: "linear-gradient(135deg, hsla(340,100%,73%,0.18) 0%, hsla(30,100%,73%,0.12) 30%, hsla(250,100%,74%,0.10) 60%, hsla(160,65%,63%,0.12) 100%)"
             }}
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="flex items-center gap-4">
+            {/* Decorative blobs */}
+            <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full opacity-20" style={{ background: "radial-gradient(circle, hsla(340,100%,73%,0.6), transparent 70%)" }} />
+            <div className="absolute -bottom-20 -left-20 w-56 h-56 rounded-full opacity-15" style={{ background: "radial-gradient(circle, hsla(160,65%,63%,0.6), transparent 70%)" }} />
+
+            <div className="relative z-10 flex items-center gap-4">
               <div className="relative shrink-0">
                 <motion.button
                   onClick={() => setAvatarMenuOpen(prev => !prev)}
-                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-3xl overflow-hidden shadow-opal cursor-pointer border-2 border-border/30 hover:border-primary/40 transition-colors"
+                  className="w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-[24px] overflow-hidden cursor-pointer border-3 border-white/50 hover:border-white/80 transition-all"
+                  style={{ boxShadow: "0 8px 32px rgba(139,124,255,0.25)" }}
                   initial={{ scale: 0, rotate: -180 }}
                   animate={{ scale: 1, rotate: 0 }}
                   transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
@@ -138,8 +143,8 @@ const Home = () => {
                   {profile?.avatar_url ? (
                     <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-opal-pink via-opal-purple to-accent flex items-center justify-center">
-                      <User className="w-7 h-7 text-white" />
+                    <div className="w-full h-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #ff7aa8, #8b7cff, #63dfb4)" }}>
+                      <User className="w-8 h-8 text-white" />
                     </div>
                   )}
                 </motion.button>
@@ -153,7 +158,7 @@ const Home = () => {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: -5 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute top-full left-0 mt-2 z-50 w-48 bg-card border border-border/30 rounded-2xl shadow-opal-hover overflow-hidden"
+                        className="absolute top-full left-0 mt-2 z-50 w-48 bg-card border border-border/20 rounded-[20px] shadow-[0_16px_48px_rgba(0,0,0,0.12)] overflow-hidden"
                       >
                         <button onClick={() => { setAvatarMenuOpen(false); navigate("/profile"); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted/50 transition-colors">
                           <User className="w-4 h-4" /> Profil
@@ -171,7 +176,7 @@ const Home = () => {
                 </AnimatePresence>
               </div>
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground leading-tight tracking-tight">
                   Hello, {profile?.display_name || "toi"} 👋
                 </h1>
                 <p className="text-sm text-muted-foreground mt-1 capitalize">
@@ -181,20 +186,26 @@ const Home = () => {
             </div>
 
             {/* Level bar */}
-            <div className="mt-4 flex items-center gap-3">
-              <span className="pill px-3 py-1 bg-card/80 text-xs font-bold text-foreground shadow-opal">⭐ Niv. {level}</span>
-              <div className="flex-1 h-1.5 bg-card/60 rounded-pill overflow-hidden">
-                <div className="h-full rounded-pill bg-gradient-to-r from-opal-pink via-opal-purple to-accent transition-all duration-500" style={{ width: `${xpPercent}%` }} />
+            <div className="relative z-10 mt-5 flex items-center gap-3">
+              <span className="rounded-full px-3 py-1.5 text-xs font-extrabold text-white shadow-lg" style={{ background: "linear-gradient(135deg, #ff7aa8, #8b7cff)" }}>⭐ Niv. {level}</span>
+              <div className="flex-1 h-2 bg-white/40 rounded-full overflow-hidden backdrop-blur-sm">
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{ background: "linear-gradient(90deg, #ff7aa8, #8b7cff, #63dfb4)" }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${xpPercent}%` }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                />
               </div>
-              <span className="text-[11px] text-muted-foreground">{xp} XP</span>
+              <span className="text-xs font-bold text-foreground/70">{xp} XP</span>
             </div>
 
             {/* Motivational + Actions */}
-            <motion.p className="text-xs sm:text-sm text-muted-foreground mt-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
+            <motion.p className="relative z-10 text-sm text-foreground/70 mt-3 font-medium" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
               {motivationalPhrase}
             </motion.p>
 
-            <div className="flex items-center justify-between mt-3">
+            <div className="relative z-10 flex items-center justify-between mt-4">
               <motion.button
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -202,7 +213,7 @@ const Home = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setAuditOpen(true)}
-                className="pill px-4 py-2 bg-card/80 shadow-opal flex items-center gap-2 cursor-pointer hover:bg-card transition-all"
+                className="rounded-full px-5 py-2.5 bg-white/80 backdrop-blur-sm shadow-[0_4px_20px_rgba(0,0,0,0.06)] flex items-center gap-2 cursor-pointer hover:bg-white transition-all border border-white/50"
               >
                 <Sun className="w-4 h-4 text-warning" />
                 <span className="text-xs font-bold text-foreground">Check-in</span>
@@ -216,7 +227,7 @@ const Home = () => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => signOut()}
-                  className="pill p-2 bg-card/80 shadow-opal cursor-pointer hover:bg-destructive/5 transition-all"
+                  className="rounded-full p-2.5 bg-white/80 backdrop-blur-sm shadow-[0_4px_20px_rgba(0,0,0,0.06)] cursor-pointer hover:bg-destructive/10 transition-all border border-white/50"
                   title="Se déconnecter"
                 >
                   <LogOut className="w-4 h-4 text-muted-foreground" />
@@ -227,28 +238,28 @@ const Home = () => {
 
           {/* ── QG Général + Raccourcis ── */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="space-y-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <Link to="/life-hq">
-                <GradientCard gradient="opal" className="p-4 flex flex-col items-center gap-2 text-center h-full">
-                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-opal-pink via-opal-purple to-accent flex items-center justify-center">
-                    <Brain className="w-5 h-5 text-white" />
+                <GradientCard gradient="opal" glow className="p-5 flex flex-col items-center gap-3 text-center h-full">
+                  <div className="w-14 h-14 rounded-[20px] flex items-center justify-center shadow-lg" style={{ background: "linear-gradient(135deg, #ff7aa8, #8b7cff, #63dfb4)" }}>
+                    <Brain className="w-6 h-6 text-white" />
                   </div>
-                  <span className="text-xs font-bold text-foreground">QG Général</span>
-                  <span className="text-[10px] text-muted-foreground leading-tight">Cockpit stratégique</span>
+                  <span className="text-sm font-extrabold text-foreground">QG Général</span>
+                  <span className="text-[11px] text-muted-foreground leading-tight">Cockpit stratégique</span>
                 </GradientCard>
               </Link>
               {[
-                { label: "Tâches", sub: "Tous espaces", icon: CheckSquare, path: "/global/tasks", iconBg: "bg-opal-pink/15 text-opal-pink" },
-                { label: "Planning", sub: "Planning global", icon: Calendar, path: "/global/planning", iconBg: "bg-accent/15 text-accent" },
-                { label: "Coach IA", sub: "Conseils perso", icon: Bot, path: "/global/coach", iconBg: "bg-opal-purple/15 text-opal-purple" },
+                { label: "Tâches", sub: "Tous espaces", icon: CheckSquare, path: "/global/tasks", bg: "linear-gradient(135deg, #ff7aa8, #ff9ff3)", color: "#ff7aa8" },
+                { label: "Planning", sub: "Planning global", icon: Calendar, path: "/global/planning", bg: "linear-gradient(135deg, #8b7cff, #a78bfa)", color: "#8b7cff" },
+                { label: "Coach IA", sub: "Conseils perso", icon: Bot, path: "/global/coach", bg: "linear-gradient(135deg, #63dfb4, #8af7c4)", color: "#63dfb4" },
               ].map((item) => (
                 <Link key={item.path} to={item.path}>
-                  <GradientCard gradient="none" className="p-4 flex flex-col items-center gap-2 cursor-pointer text-center h-full">
-                    <div className={`w-11 h-11 rounded-2xl ${item.iconBg} flex items-center justify-center`}>
-                      <item.icon className="w-5 h-5" />
+                  <GradientCard gradient="none" className="p-5 flex flex-col items-center gap-3 cursor-pointer text-center h-full hover:border-primary/20 border border-border/10 transition-all">
+                    <div className="w-14 h-14 rounded-[20px] flex items-center justify-center shadow-md" style={{ background: item.bg }}>
+                      <item.icon className="w-6 h-6 text-white" />
                     </div>
-                    <span className="text-xs font-bold text-foreground">{item.label}</span>
-                    <span className="text-[10px] text-muted-foreground leading-tight">{item.sub}</span>
+                    <span className="text-sm font-extrabold text-foreground">{item.label}</span>
+                    <span className="text-[11px] text-muted-foreground leading-tight">{item.sub}</span>
                   </GradientCard>
                 </Link>
               ))}

@@ -29,8 +29,8 @@ export const BottomNav = () => {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
-      <div className="bg-card/95 backdrop-blur-2xl border-t border-border/30 px-2 pb-[env(safe-area-inset-bottom)] transition-colors duration-300">
-        <div className="flex items-center justify-around h-16">
+      <div className="px-2 pb-[env(safe-area-inset-bottom)] transition-colors duration-300" style={{ background: "hsla(0,0%,100%,0.92)", backdropFilter: "blur(24px) saturate(1.8)", WebkitBackdropFilter: "blur(24px) saturate(1.8)", borderTop: "1px solid hsla(0,0%,0%,0.04)" }}>
+        <div className="flex items-center justify-around h-[68px]">
           {navItems.map((item) => {
             const isActive = isItemActive(item);
             const badge = item.path === "/global/tasks" && inboxCount > 0 ? inboxCount : null;
@@ -40,9 +40,9 @@ export const BottomNav = () => {
                   {isActive && (
                     <motion.div
                       layoutId="bottomnav-active"
-                      className="absolute -inset-2.5 rounded-2xl"
+                      className="absolute -inset-3 rounded-[18px]"
                       style={{
-                        background: "linear-gradient(135deg, hsl(var(--opal-pink) / 0.2), hsl(var(--opal-purple) / 0.15))"
+                        background: "linear-gradient(135deg, hsla(340,100%,73%,0.22), hsla(250,100%,74%,0.18))"
                       }}
                       transition={{ type: "spring", stiffness: 350, damping: 30 }}
                     />

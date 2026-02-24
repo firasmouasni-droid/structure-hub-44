@@ -6,8 +6,8 @@
 
 @layer base {
   :root {
-    --background: 240 20% 98%;
-    --foreground: 240 20% 8%;
+    --background: 246 25% 97%;
+    --foreground: 230 30% 10%;
 
     --card: 0 0% 100%;
     --card-foreground: 240 20% 8%;
@@ -138,7 +138,7 @@
   }
 
   :root body {
-    background: linear-gradient(180deg, hsl(250 30% 96%) 0%, hsl(240 20% 98%) 30%, hsl(240 20% 98%) 100%);
+    background: linear-gradient(180deg, hsla(280, 40%, 95%, 1) 0%, hsla(246, 25%, 97%, 1) 20%, hsla(246, 25%, 97%, 1) 100%);
   }
 
   .dark body,
