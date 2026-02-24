@@ -224,10 +224,10 @@ const Home = () => {
           {/* ── Shortcuts Grid ── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: "QG Général", sub: "Cockpit stratégique", icon: Brain, path: "/life-hq", accent: true },
-                { label: "Tâches", sub: "Tous espaces", icon: CheckSquare, path: "/global/tasks", iconTint: "text-opal-green", iconBg: "bg-opal-green/10" },
-                { label: "Planning", sub: "Planning global", icon: Calendar, path: "/global/planning", iconTint: "text-accent", iconBg: "bg-accent/10" },
-                { label: "Coach IA", sub: "Conseils perso", icon: Bot, path: "/global/coach", iconTint: "text-opal-pink", iconBg: "bg-opal-pink/10" },
+                { label: "QG Général", sub: "Cockpit stratégique", icon: Brain, path: "/life-hq", bg: "bg-charcoal", iconBg: "bg-white/15", iconColor: "text-white", textColor: "text-white", subColor: "text-white/60" },
+                { label: "Tâches", sub: "Tous espaces", icon: CheckSquare, path: "/global/tasks", bg: "bg-gradient-to-br from-opal-green/15 to-opal-green/5", iconBg: "bg-opal-green/20", iconColor: "text-opal-green", textColor: "text-foreground", subColor: "text-muted-foreground" },
+                { label: "Planning", sub: "Planning global", icon: Calendar, path: "/global/planning", bg: "bg-gradient-to-br from-accent/15 to-accent/5", iconBg: "bg-accent/20", iconColor: "text-accent", textColor: "text-foreground", subColor: "text-muted-foreground" },
+                { label: "Coach IA", sub: "Conseils perso", icon: Bot, path: "/global/coach", bg: "bg-gradient-to-br from-opal-pink/15 to-opal-purple/5", iconBg: "bg-opal-pink/20", iconColor: "text-opal-pink", textColor: "text-foreground", subColor: "text-muted-foreground" },
               ].map((item, idx) => (
                 <Link key={item.path} to={item.path}>
                   <motion.div
@@ -235,20 +235,14 @@ const Home = () => {
                     initial={{ opacity: 0, y: 20, scale: 0.93 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 0.2 + idx * 0.08, duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
-                    className={`rounded-[20px] p-5 flex flex-col gap-3 h-full transition-colors ${
-                      item.accent 
-                        ? "bg-charcoal text-white" 
-                        : "bg-card border border-border/40 hover:border-border"
-                    }`}
+                    className={`rounded-[20px] p-5 flex flex-col gap-3 h-full transition-colors ${item.bg}`}
                   >
-                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${
-                      item.accent ? "bg-white/15" : (item.iconBg || "bg-muted")
-                    }`}>
-                      <item.icon className={`w-5 h-5 ${item.accent ? "text-white" : (item.iconTint || "text-foreground")}`} />
+                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${item.iconBg}`}>
+                      <item.icon className={`w-5 h-5 ${item.iconColor}`} />
                     </div>
                     <div>
-                      <span className={`text-sm font-bold block ${item.accent ? "text-white" : "text-foreground"}`}>{item.label}</span>
-                      <span className={`text-[11px] ${item.accent ? "text-white/60" : "text-muted-foreground"}`}>{item.sub}</span>
+                      <span className={`text-sm font-bold block ${item.textColor}`}>{item.label}</span>
+                      <span className={`text-[11px] ${item.subColor}`}>{item.sub}</span>
                     </div>
                   </motion.div>
                 </Link>
