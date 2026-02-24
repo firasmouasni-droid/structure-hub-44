@@ -65,7 +65,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
     cn(
       "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150",
       isActive
-        ? "bg-primary/10 text-primary font-semibold"
+        ? "bg-charcoal text-white"
         : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
     );
 
@@ -74,7 +74,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
       {/* Logo */}
       <div className="px-5 py-5">
         <Link to="/" onClick={onNavigate} className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, hsl(var(--opal-purple)), hsl(var(--opal-pink)))" }}>
+          <div className="w-9 h-9 rounded-xl bg-charcoal flex items-center justify-center">
             <Brain className="w-4 h-4 text-white" />
           </div>
           <div>
@@ -106,7 +106,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
             className={cn(
               "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150",
               isOnWorkRoute
-                ? "bg-primary/10 text-primary font-semibold"
+                ? "bg-charcoal text-white"
                 : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
             )}
           >
