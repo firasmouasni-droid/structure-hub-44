@@ -142,38 +142,31 @@ const WorkSpacePage = () => {
           </p>
         </motion.div>
 
-        {/* Mini‑metrics row — horizontal scroll on mobile, grid on desktop */}
+        {/* Mini‑metrics — stacked on mobile, row on desktop */}
         <motion.div
-          className="flex sm:grid sm:grid-cols-3 gap-2 sm:gap-3 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:overflow-visible"
-          style={{ scrollbarWidth: "none" }}
+          className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.05 }}
         >
-          <div className="min-w-[140px] sm:min-w-0 flex-shrink-0 sm:flex-shrink">
-            <MiniMetric
-              icon={Battery}
-              label="Charge"
-              value={`${pendingCount} tâche${pendingCount !== 1 ? "s" : ""}`}
-              gradient="linear-gradient(135deg, hsl(var(--opal-pink)), hsl(var(--opal-orange)))"
-            />
-          </div>
-          <div className="min-w-[130px] sm:min-w-0 flex-shrink-0 sm:flex-shrink">
-            <MiniMetric
-              icon={Brain}
-              label="Énergie"
-              value={energyLevel ? `${energyLevel}/10` : "—"}
-              gradient="linear-gradient(135deg, hsl(var(--opal-purple)), hsl(var(--opal-pink)))"
-            />
-          </div>
-          <div className="min-w-[130px] sm:min-w-0 flex-shrink-0 sm:flex-shrink">
-            <MiniMetric
-              icon={Clock}
-              label="Prochain"
-              value={nextEvent ? format(new Date(nextEvent.start_time), "HH:mm") : "—"}
-              gradient="linear-gradient(135deg, hsl(var(--opal-green)), hsl(var(--opal-purple)))"
-            />
-          </div>
+          <MiniMetric
+            icon={Battery}
+            label="Charge"
+            value={`${pendingCount} tâche${pendingCount !== 1 ? "s" : ""}`}
+            gradient="linear-gradient(135deg, hsl(var(--opal-pink)), hsl(var(--opal-orange)))"
+          />
+          <MiniMetric
+            icon={Brain}
+            label="Énergie"
+            value={energyLevel ? `${energyLevel}/10` : "—"}
+            gradient="linear-gradient(135deg, hsl(var(--opal-purple)), hsl(var(--opal-pink)))"
+          />
+          <MiniMetric
+            icon={Clock}
+            label="Prochain"
+            value={nextEvent ? format(new Date(nextEvent.start_time), "HH:mm") : "—"}
+            gradient="linear-gradient(135deg, hsl(var(--opal-green)), hsl(var(--opal-purple)))"
+          />
         </motion.div>
 
         {/* ── 2. CARTE PRINCIPALE — "Ce qui compte maintenant" ── */}
