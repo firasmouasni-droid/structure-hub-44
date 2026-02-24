@@ -24,6 +24,18 @@
 </head>
 
   <body>
+    <script>
+      (function(){
+        // v2: force light mode for Opal redesign
+        if (!localStorage.getItem('sc-theme-v2')) {
+          localStorage.setItem('sc-theme', 'light');
+          localStorage.setItem('sc-theme-v2', '1');
+        }
+        var t = localStorage.getItem('sc-theme');
+        if (t === 'dark') document.documentElement.classList.add('dark');
+        else document.documentElement.classList.remove('dark');
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
