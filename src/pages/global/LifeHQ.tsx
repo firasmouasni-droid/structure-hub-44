@@ -58,32 +58,36 @@ const LifeHQ = () => {
       <div className="p-5 lg:p-8 max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <motion.div
-          className="rounded-3xl p-6"
-          style={{ background: "linear-gradient(135deg, hsl(var(--opal-pink) / 0.08), hsl(var(--opal-purple) / 0.06), hsl(var(--opal-green) / 0.04))" }}
+          className="relative overflow-hidden rounded-[32px] p-6 sm:p-8"
+          style={{
+            background: "linear-gradient(135deg, hsla(340,100%,73%,0.18) 0%, hsla(250,100%,74%,0.12) 50%, hsla(160,65%,63%,0.14) 100%)"
+          }}
           initial={{ opacity: 0, y: -15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          <div className="flex items-center justify-between">
+          <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full opacity-20" style={{ background: "radial-gradient(circle, hsla(250,100%,74%,0.6), transparent 70%)" }} />
+          <div className="absolute -bottom-16 -left-16 w-44 h-44 rounded-full opacity-15" style={{ background: "radial-gradient(circle, hsla(160,65%,63%,0.6), transparent 70%)" }} />
+          <div className="relative z-10 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-opal-pink via-opal-purple to-accent flex items-center justify-center shadow-soft">
-                <Brain className="w-7 h-7 text-white" />
+              <div className="w-16 h-16 rounded-[22px] flex items-center justify-center shadow-lg" style={{ background: "linear-gradient(135deg, #ff7aa8, #8b7cff, #63dfb4)" }}>
+                <Brain className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">QG Général</h1>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">QG Général</h1>
                 <p className="text-sm text-muted-foreground">
                   Vision stratégique · <span className="capitalize">{format(new Date(), "EEEE d MMMM", { locale: fr })}</span>
                 </p>
               </div>
             </div>
             <div className="hidden sm:flex items-center gap-2">
-              <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setAuditOpen(true)} className="pill px-3 py-1.5 bg-card/80 shadow-opal flex items-center gap-1.5 cursor-pointer hover:bg-card transition-all">
+              <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setAuditOpen(true)} className="rounded-full px-4 py-2 bg-white/80 backdrop-blur-sm shadow-[0_4px_16px_rgba(0,0,0,0.06)] flex items-center gap-2 cursor-pointer hover:bg-white transition-all border border-white/50">
                 <Sun className="w-3.5 h-3.5 text-warning" /><span className="text-xs font-bold text-foreground">Check-in</span>
               </motion.button>
-              <div className="pill px-3 py-1.5 bg-card/80 shadow-opal flex items-center gap-1.5">
+              <div className="rounded-full px-4 py-2 bg-white/80 backdrop-blur-sm shadow-[0_4px_16px_rgba(0,0,0,0.06)] flex items-center gap-2 border border-white/50">
                 <Flame className="w-3.5 h-3.5 text-warning" /><span className="text-xs font-bold text-foreground">{streak}j</span>
               </div>
-              <div className="pill px-3 py-1.5 bg-gradient-to-r from-opal-pink to-opal-purple shadow-soft flex items-center gap-1.5">
+              <div className="rounded-full px-4 py-2 shadow-lg flex items-center gap-2" style={{ background: "linear-gradient(135deg, #ff7aa8, #8b7cff)" }}>
                 <Zap className="w-3.5 h-3.5 text-white" /><span className="text-xs font-bold text-white">Niv. {level}</span>
               </div>
             </div>

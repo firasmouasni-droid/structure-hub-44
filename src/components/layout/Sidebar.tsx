@@ -71,16 +71,16 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
     );
 
   return (
-    <aside className="w-64 h-screen bg-card/95 backdrop-blur-xl border-r border-border/30 flex flex-col transition-colors duration-300">
+    <aside className="w-[270px] h-screen flex flex-col transition-colors duration-300" style={{ background: "linear-gradient(180deg, hsla(280,40%,97%,1) 0%, hsl(0,0%,100%) 30%)", borderRight: "1px solid hsla(0,0%,0%,0.04)" }}>
       {/* Logo */}
       <div className="px-5 py-5">
         <Link to="/" onClick={onNavigate} className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-opal-pink via-opal-purple to-accent flex items-center justify-center shadow-soft">
+          <div className="w-11 h-11 rounded-[16px] flex items-center justify-center shadow-lg" style={{ background: "linear-gradient(135deg, #ff7aa8, #8b7cff, #63dfb4)" }}>
             <Brain className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-sm font-bold text-foreground">Second Cerveau</h1>
-            <p className="text-[11px] text-muted-foreground">Life OS</p>
+            <h1 className="text-sm font-extrabold text-foreground tracking-tight">Second Cerveau</h1>
+            <p className="text-[11px] text-muted-foreground font-medium">Life OS</p>
           </div>
         </Link>
       </div>
@@ -229,13 +229,13 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
         </Link>
         <div className="mt-4 px-2">
           <div className="flex items-center justify-between text-[11px] mb-2">
-            <span className="font-semibold text-foreground">Niveau {level} ⭐</span>
-            <span className="text-muted-foreground">{xp.toLocaleString()} XP</span>
+            <span className="font-extrabold text-foreground">Niveau {level} ⭐</span>
+            <span className="text-muted-foreground font-semibold">{xp.toLocaleString()} XP</span>
           </div>
-          <div className="h-1.5 bg-muted rounded-pill overflow-hidden">
+          <div className="h-2 bg-muted/60 rounded-full overflow-hidden">
             <div
-              className="h-full rounded-pill bg-gradient-to-r from-primary to-accent transition-all duration-500"
-              style={{ width: `${xpPercent}%` }}
+              className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${xpPercent}%`, background: "linear-gradient(90deg, #ff7aa8, #8b7cff, #63dfb4)" }}
             />
           </div>
         </div>
