@@ -1,7 +1,7 @@
 import { useTasks, useUpdateTask, useWIPStatus, WIP_LIMITS } from "@/hooks/useTasks";
 import { useStructures } from "@/hooks/useStructures";
 import { useIncrementXP } from "@/hooks/useUserStats";
-import { Search, Brain, Scissors, AlertTriangle } from "lucide-react";
+import { Search, Brain, Scissors, AlertTriangle, CheckSquare } from "lucide-react";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -159,7 +159,20 @@ const GlobalTasks = () => {
 
       <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-foreground">Toutes les tâches</h1>
+          <div className="flex items-center gap-3">
+            <motion.div
+              className="w-12 h-12 rounded-3xl bg-charcoal flex items-center justify-center"
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", stiffness: 260, damping: 20 }}
+            >
+              <CheckSquare className="w-6 h-6 text-white" />
+            </motion.div>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Toutes les tâches</h1>
+              <p className="text-sm text-muted-foreground">{filtered.length} tâche{filtered.length > 1 ? "s" : ""}</p>
+            </div>
+          </div>
           {wip.globalExceeded && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-warning/15 border border-warning/20">
               <AlertTriangle className="w-4 h-4 text-warning" />
@@ -171,7 +184,7 @@ const GlobalTasks = () => {
         <div className="space-y-3">
           <div className="flex items-center gap-1 p-1 bg-card/70 backdrop-blur-sm rounded-2xl shadow-soft overflow-x-auto">
             {TABS.map(tab => (
-              <motion.button key={tab.key} onClick={() => setActiveTab(tab.key)} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${activeTab === tab.key ? "gradient-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:text-foreground"}`}>
+              <motion.button key={tab.key} onClick={() => setActiveTab(tab.key)} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${activeTab === tab.key ? "bg-charcoal text-white shadow-soft" : "text-muted-foreground hover:text-foreground"}`}>
                 {tab.label}
               </motion.button>
             ))}
@@ -212,7 +225,7 @@ const GlobalTasks = () => {
                       </p>
                     </div>
 
-                    <span className={`pill text-[10px] font-bold px-2.5 py-1 shrink-0 ${task.priority === "high" ? "bg-destructive/20 text-destructive-foreground" : task.priority === "medium" ? "bg-warning/20 text-warning-foreground" : "bg-muted text-muted-foreground"}`}>{task.priority}</span>
+                    <span className={`pill text-[10px] font-bold px-2.5 py-1 shrink-0 text-white ${task.priority === "high" ? "bg-opal-pink" : task.priority === "medium" ? "bg-opal-orange" : task.priority === "critical" ? "bg-destructive" : "bg-muted text-muted-foreground"}`}>{task.priority}</span>
                   </div>
 
                   {/* Action row — visible below on mobile */}
